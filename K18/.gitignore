@@ -1,0 +1,161 @@
+# ============================================
+# K18 AI Hair Analysis - Root .gitignore
+# Keeps repo lightweight & reinstallable
+# ============================================
+
+# === Node.js / Frontend ===
+node_modules/
+dist/
+dist-ssr/
+.cache/
+*.local
+
+# Package lock files (keep one)
+# npm: keep package-lock.json
+# yarn: keep yarn.lock
+# pnpm: keep pnpm-lock.yaml
+# bun: keep bun.lockb
+package-lock.json
+
+# Build outputs
+build/
+out/
+.next/
+.nuxt/
+.vuepress/dist
+.serverless/
+.docusaurus/
+
+# === Python / Backend ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments (HEAVY - reinstall with requirements.txt)
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+
+# === Machine Learning Models (VERY HEAVY) ===
+# Don't commit models - download from HuggingFace
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.weights
+models/
+checkpoints/
+*.safetensors
+
+# Transformers cache (can be 5GB+)
+.cache/
+*/.cache/
+transformers_cache/
+huggingface/
+
+# === Environment Variables ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+.env.*
+!.env.example
+
+# === IDE / Editor ===
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.DS_Store
+
+# === OS Files ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.lnk
+
+# === Logs ===
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Testing ===
+coverage/
+.nyc_output/
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
+# === Temporary Files ===
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.lock-wscript
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === Misc ===
+.npm
+.eslintcache
+.node_repl_history
+.yarn-integrity
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

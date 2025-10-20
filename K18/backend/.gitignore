@@ -1,0 +1,112 @@
+# ============================================
+# K18 Backend - Python .gitignore
+# ============================================
+
+# === Python Bytecode ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# === Virtual Environments (HEAVY - reinstall with requirements.txt) ===
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+pip-selfcheck.json
+
+# === Python Distribution / Packaging ===
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# === ML Models & Weights (VERY HEAVY) ===
+# Models are downloaded from HuggingFace on first run
+*.pth
+*.pt
+*.onnx
+*.h5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.weights
+*.bin
+models/
+checkpoints/
+saved_models/
+*.safetensors
+
+# === Transformers Cache (can be 5GB+) ===
+.cache/
+transformers_cache/
+huggingface/
+torch/
+
+# === Environment Variables ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+!.env.example
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+*.lnk
+
+# === Logs ===
+*.log
+logs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Testing ===
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
+# === Jupyter Notebooks ===
+.ipynb_checkpoints/
+*.ipynb
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === Temporary Files ===
+tmp/
+temp/
+*.tmp
+*.bak
