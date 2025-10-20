@@ -25,19 +25,22 @@ const Index = () => {
           navigate("/chat");
         },
         (error) => {
+          console.log("Geolocation error:", error);
           toast({
-            title: "Location access denied",
-            description: "Please enable location access to improve the quality of the analysis",
-            variant: "destructive"
+            title: "Continuing without location",
+            description: "Location access was not granted. You can still use the chat.",
           });
+          // Navigate to chat even without location
+          navigate("/chat");
         }
       );
     } else {
       toast({
-        title: "Location not supported",
-        description: "Your browser doesn't support geolocation",
-        variant: "destructive"
+        title: "Continuing without location",
+        description: "Your browser doesn't support geolocation, but you can still use the chat.",
       });
+      // Navigate to chat even without geolocation support
+      navigate("/chat");
     }
   };
 
