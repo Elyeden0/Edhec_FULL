@@ -1,73 +1,174 @@
-# Welcome to your Lovable project
+# K18 AI Hair Analysis System
 
-## Project info
+AI-powered hair analysis and product recommendation platform combining computer vision, real-time weather data, and intelligent product matching.
 
-**URL**: https://lovable.dev/projects/b208fb45-d9ba-4c15-9a79-79ec44e5fd65
+## 🌟 Features
 
-## How can I edit this code?
+- **📸 Hair Analysis**: Upload or capture photos for AI-powered hair type detection (dry/normal/oily)
+- **🌦️ Weather Integration**: Real-time weather data based on user location
+- **🛍️ Smart Recommendations**: Personalized K18 product suggestions based on hair type AND climate
+- **💡 Reasoning Engine**: Detailed explanations for each recommendation
+- **📱 Mobile Responsive**: Works seamlessly on all devices
 
-There are several ways of editing your application.
+## 🚀 Quick Start
 
-**Use Lovable**
+### One-Command Start
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b208fb45-d9ba-4c15-9a79-79ec44e5fd65) and start prompting.
+```bash
+./start.sh
+```
 
-Changes made via Lovable will be committed automatically to this repo.
+This will start both the backend API and frontend automatically.
 
-**Use your preferred IDE**
+### Manual Start
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Backend (Terminal 1):**
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+**Frontend (Terminal 2):**
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Access the Application
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
 
-**Use GitHub Codespaces**
+## 📖 Documentation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[AI_SYSTEM_README.md](AI_SYSTEM_README.md)** - Complete technical documentation
+- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Project overview and architecture
+- **[backend/README.md](backend/README.md)** - Backend API reference
 
-## What technologies are used for this project?
+## 🏗️ Architecture
 
-This project is built with:
+```
+Frontend (React + TypeScript)
+    ↓
+Backend API (FastAPI + Python)
+    ↓
+┌─────────────┬──────────────┬──────────────┐
+│ Hair        │ Weather      │ Product      │
+│ Analyzer    │ Service      │ Recommender  │
+│             │              │              │
+│ (LLM_hair   │ (Open-Meteo  │ (7 K18       │
+│  models)    │  API)        │  products)   │
+└─────────────┴──────────────┴──────────────┘
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠️ Technologies
 
-## How can I deploy this project?
+### Backend
+- FastAPI - Modern Python web framework
+- PyTorch - Deep learning inference
+- Transformers - Pre-trained models
+- Pillow - Image processing
 
-Simply open [Lovable](https://lovable.dev/projects/b208fb45-d9ba-4c15-9a79-79ec44e5fd65) and click on Share -> Publish.
+### Frontend
+- React + TypeScript
+- Vite - Build tool
+- Tailwind CSS - Styling
+- shadcn-ui - Component library
 
-## Can I connect a custom domain to my Lovable project?
+### Integration
+- LLM_hair models for hair analysis
+- Open-Meteo API for weather data
+- Geolocation API for user location
 
-Yes, you can!
+## 📦 Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+K18/
+├── backend/              # Python FastAPI backend
+│   ├── main.py          # API server
+│   ├── hair_analyzer.py # Hair analysis
+│   ├── weather_service.py
+│   └── product_recommender.py
+├── src/                 # React frontend
+│   ├── pages/
+│   │   ├── Index.tsx    # Landing page
+│   │   ├── ChatNew.tsx  # Analysis UI
+│   │   └── Products.tsx
+│   └── components/
+├── start.sh            # Startup script
+└── docs/              # Documentation
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+cd backend
+python test_system.py
+```
+
+## 📝 How to Use
+
+1. **Visit** http://localhost:5173
+2. **Click** "Chat with K18"
+3. **Allow** location access
+4. **Upload or capture** a hair photo
+5. **View** your personalized recommendations!
+
+## 🎯 Key Features
+
+### Hair Analysis
+- Uses ML models from LLM_hair project
+- Detects hair type: dry, normal, or oily
+- Provides confidence scores
+
+### Weather-Aware
+- Fetches real-time weather data
+- Considers temperature, humidity, precipitation
+- Adapts recommendations to climate
+
+### Smart Matching
+- 7 K18 products in database
+- Matches hair type + weather conditions
+- Provides detailed reasoning
+
+## 🔧 Configuration
+
+### Backend
+- Port: 8000 (configurable in `main.py`)
+- CORS: Enabled for localhost
+- API docs: http://localhost:8000/docs
+
+### Frontend
+- Port: 5173 (Vite default)
+- API URL: Update in `ChatNew.tsx` if needed
+
+## 🚀 Deployment
+
+See [AI_SYSTEM_README.md](AI_SYSTEM_README.md) for deployment instructions.
+
+## 📄 Original Project Info
+
+This project was originally created with [Lovable](https://lovable.dev/projects/b208fb45-d9ba-4c15-9a79-79ec44e5fd65).
+
+## 🤝 Contributing
+
+To extend this system:
+1. Add new products in `backend/product_recommender.py`
+2. Customize UI in `src/pages/ChatNew.tsx`
+3. Train better models in `../LLM_hair/`
+
+## 📚 Learn More
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [PyTorch Documentation](https://pytorch.org/docs/)
+- [React Documentation](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+Made with ❤️ using K18 biomimetic haircare science
