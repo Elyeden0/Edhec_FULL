@@ -1,42 +1,144 @@
 # K18 Hair Analysis Backend
 
-AI-powered hair analysis system that combines computer vision, weather data, and product recommendation engine.
+AI-powered hair analysis using **Ollama (100% Free)** or OpenAI for accurate hair type detection and K18 product recommendations.
 
-## Features
+## 🆓 Option 1: Ollama (Recommended - Completely Free)
 
-- **Hair Condition Analysis**: Analyzes uploaded images to detect hair type (dry, normal, oily)
-- **Weather Integration**: Fetches real-time weather data based on user location
-- **Smart Recommendations**: Recommends K18 products based on hair type and weather conditions
-- **Fast & Accurate**: Uses ML models from LLM_hair for precise analysis
+### Why LLaVA?
+**LLaVA** (Large Language and Vision Assistant) is a specialized vision model that can "see" and analyze images, unlike text-only models. It's perfect for hair analysis because it can detect:
+- Texture and shine
+- Color and highlights
+- Dryness or oiliness
+- Overall hair health
 
-## Setup
+### Quick Setup (5 minutes)
 
-### 1. Install Dependencies
+#### 1. Install Ollama
+```bash
+# Linux/Mac
+curl -fsSL https://ollama.com/install.sh | sh
 
+# Or visit: https://ollama.com/download
+```
+
+#### 2. Pull LLaVA Vision Model
+```bash
+# Start Ollama service (if not auto-started)
+ollama serve
+
+# In another terminal, download the model (~4.5GB, one-time)
+ollama pull llava
+```
+
+**Alternative vision models you can try:**
+```bash
+ollama pull llava:13b      # Larger, more accurate (7GB)
+ollama pull bakllava       # Alternative vision model
+ollama pull llava:34b      # Most accurate (20GB)
+```
+
+#### 3. Verify Installation
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Test the model
+ollama run llava "describe this image"
+```
+
+#### 4. Install Python Dependencies
 ```bash
 cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run the Server
-
+#### 5. Start Backend
 ```bash
 python main.py
 ```
 
-Or using uvicorn directly:
+✅ **Done!** Your backend now uses free local AI for hair analysis.
+
+---
+
+## 💳 Option 2: OpenAI (Paid API)
+
+If you prefer cloud-based AI (requires payment after free trial):
+
+### 1. Get OpenAI API Key
+1. Visit https://platform.openai.com/api-keys
+2. Create a new API key
+3. Copy the key (starts with `sk-...`)
+
+### 2. Setup Environment
 
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+
+# Create .env file
+nano .env
 ```
 
-The API will be available at `http://localhost:8000`
+Add to `.env`:
+```env
+OPENAI_API_KEY=sk-your-actual-api-key-here
+```
 
-## API Endpoints
+### 3. Update Code
 
-### POST /analyze
+Edit `hair_analyzer.py` line 11:
+```python
+self.use_ollama = False  # Disable Ollama
+```
 
-Analyze hair image and get product recommendations.
+Then add OpenAI integration (see CHATGPT_MIGRATION.md)
+
+---
+
+## 📋 How It Works
+
+### With Ollama (Free):
+1. Image uploaded → Backend receives it
+2. Converts to base64 and resizes for speed
+3. Sends to local Ollama API (port 11434)
+4. LLaVA analyzes hair and returns JSON
+5. Backend parses and formats response
+6. Frontend displays results with AI reasoning
+
+### Fallback (If Ollama Not Running):
+- Uses simple image analysis (brightness/texture)
+- Still provides reasoning and characteristics
+- Good enough for basic mockups
+
+---
+
+## 🔍 Vision Models Comparison
+
+### Why LLaVA for Hair Analysis?
+
+| Model | Type | Best For | Size | Speed |
+|-------|------|----------|------|-------|
+| **llava** | Vision AI | **Hair analysis** ✅ | 4.5GB | Fast |
+| llava:13b | Vision AI | More accuracy | 7GB | Medium |
+| llava:34b | Vision AI | Best accuracy | 20GB | Slow |
+| bakllava | Vision AI | Alternative | 4.5GB | Fast |
+| llama3 | Text only | ❌ Can't see images | 3GB | N/A |
+| mistral | Text only | ❌ Can't see images | 4GB | N/A |
+
+**LLaVA is recommended because:**
+- ✅ Can actually "see" and analyze images
+- ✅ Trained on visual understanding
+- ✅ Good balance of size/speed/accuracy
+- ✅ Perfect for detecting hair texture, shine, and condition
+- ✅ Provides natural language explanations
+
+**Text-only models (like llama3, mistral) won't work** for this project because they can't process images.
+
+---
+
+## 🎯 API Endpoints
 
 **Parameters:**
 - `image` (file): Hair image

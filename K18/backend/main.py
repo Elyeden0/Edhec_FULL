@@ -1,5 +1,5 @@
 """FastAPI Backend for K18 Hair Analysis
-Main API endpoint for the hair analysis and product recommendation system
+Main API endpoint using ChatGPT-4 Vision for hair analysis
 """
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,17 +7,31 @@ from PIL import Image
 import io
 from typing import Optional
 import json
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from weather_service import WeatherService
 from hair_analyzer import HairAnalyzer
 from product_recommender import ProductRecommender
 
-app = FastAPI(title="K18 Hair Analysis API", version="1.0.0")
+app = FastAPI(
+    title="K18 Hair Analysis API",
+    version="2.0.0",
+    description="AI-powered hair analysis using ChatGPT-4 Vision"
+)
 
 # Enable CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://localhost:8081"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,18 +44,28 @@ product_recommender = ProductRecommender()
 
 @app.get("/")
 async def root():
+    """API information endpoint"""
     return {
-        "message": "K18 Hair Analysis API",
-        "version": "1.0.0",
+        "name": "K18 Hair Analysis API",
+        "version": "2.0.0",
+        "ai_engine": "ChatGPT-4 Vision",
+        "status": "operational",
         "endpoints": {
-            "/analyze": "POST - Analyze hair and get product recommendations",
-            "/health": "GET - Health check"
+            "POST /analyze": "Analyze hair image and get K18 product recommendations",
+            "GET /products": "List all K18 products",
+            "GET /health": "Health check"
         }
     }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check endpoint"""
+    api_key_set = bool(os.getenv("OPENAI_API_KEY"))
+    return {
+        "status": "healthy",
+        "api_configured": api_key_set,
+        "message": "API is operational" if api_key_set else "Warning: OPENAI_API_KEY not set"
+    }
 
 @app.post("/analyze")
 async def analyze_hair(
@@ -58,7 +82,7 @@ async def analyze_hair(
     - longitude: User's longitude (optional, for weather data)
     
     Returns:
-    - hair_analysis: Hair type, confidence, scores
+    - hair_analysis: Hair type, confidence, scores with weather-aware reasoning
     - weather_data: Current weather conditions
     - recommendations: Top 3 product recommendations with reasoning
     """
@@ -71,10 +95,7 @@ async def analyze_hair(
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
         
-        # Analyze hair condition
-        hair_analysis = hair_analyzer.analyze_hair(img)
-        
-        # Get weather data if location provided
+        # Get weather data FIRST if location provided
         weather_data = {}
         if latitude is not None and longitude is not None:
             weather_data = weather_service.get_weather(latitude, longitude)
@@ -89,6 +110,9 @@ async def analyze_hair(
                 "is_rainy": False,
                 "message": "Location not provided"
             }
+        
+        # Analyze hair condition WITH weather context
+        hair_analysis = hair_analyzer.analyze_hair(img, weather_data=weather_data)
         
         # Get product recommendations
         recommendations = product_recommender.recommend(
