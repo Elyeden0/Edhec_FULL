@@ -251,21 +251,35 @@ Respond ONLY with valid JSON in this format:
             # Classification logic with detailed reasoning
             characteristics = []
             
-            # OILY HAIR: High brightness, low texture variance, many bright pixels
-            if brightness > 135 and texture_variance < 45 and bright_pixels > 0.15:
+            # Calculate a composite score
+            # Higher score = more oily, Lower score = more dry
+            shine_score = (brightness / 255.0) * 100  # 0-100
+            texture_score = (50 - min(texture_variance, 50)) * 2  # Smoother = higher score
+            highlight_score = bright_pixels * 1000  # Scale up for visibility
+            
+            composite_score = (shine_score * 0.4) + (texture_score * 0.3) + (highlight_score * 0.3)
+            
+            # Debug output
+            print(f"[SIMPLE ANALYSIS] Brightness: {brightness:.1f}, Texture Var: {texture_variance:.1f}, Bright Pixels: {bright_pixels:.3f}")
+            print(f"[SIMPLE ANALYSIS] Shine: {shine_score:.1f}, Texture: {texture_score:.1f}, Highlight: {highlight_score:.1f}")
+            print(f"[SIMPLE ANALYSIS] Composite Score: {composite_score:.1f}")
+            
+            # More balanced thresholds
+            # OILY HAIR: High composite score (>60)
+            if composite_score > 60:
                 hair_type = "oily"
-                confidence = 0.75
+                confidence = min(0.65 + (composite_score - 60) / 200, 0.85)
                 characteristics = ["shiny appearance", "smooth texture", "reflective surface"]
                 reasoning = f"The hair shows high brightness with smooth, uniform texture and reflective highlights, characteristic of oily hair with excess sebum.{weather_impact}"
                 
-            # DRY HAIR: Low brightness OR high texture variance, fewer bright pixels
-            elif brightness < 90 or texture_variance > 55 or (bright_pixels < 0.08 and dark_pixels > 0.2):
+            # DRY HAIR: Low composite score (<40)
+            elif composite_score < 40:
                 hair_type = "dry"
-                confidence = 0.72
+                confidence = min(0.65 + (40 - composite_score) / 200, 0.85)
                 characteristics = ["dull appearance", "rough texture", "low shine"]
                 reasoning = f"The hair displays reduced brightness and increased texture variation, indicating lack of moisture typical of dry hair.{weather_impact}"
                 
-            # NORMAL HAIR: Balanced metrics
+            # NORMAL HAIR: Mid-range (40-60)
             else:
                 hair_type = "normal"
                 confidence = 0.70

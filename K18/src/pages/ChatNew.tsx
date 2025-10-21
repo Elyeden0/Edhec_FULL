@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Camera, Upload, Loader2, MapPin, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ const Chat = () => {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   // Load city name on mount
-  useState(() => {
+  useEffect(() => {
     const locationData = localStorage.getItem('userLocation');
     if (locationData) {
       const { city } = JSON.parse(locationData);
@@ -75,7 +75,7 @@ const Chat = () => {
         setCityName(city);
       }
     }
-  });
+  }, []);
 
   const geocodeCity = async (cityName: string) => {
     try {
@@ -153,14 +153,21 @@ const Chat = () => {
 
   const startCamera = async () => {
     try {
+      setCameraActive(true); // Set state first to show the video element
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user" } 
+        video: { 
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setCameraActive(true);
+        await videoRef.current.play(); // Explicitly start playing
       }
     } catch (error) {
+      console.error("Camera error:", error);
+      setCameraActive(false); // Reset state on error
       toast({
         title: "Camera Error",
         description: "Could not access camera. Please check permissions.",
@@ -345,15 +352,17 @@ const Chat = () => {
                     ref={videoRef}
                     autoPlay
                     playsInline
-                    className="w-full rounded-lg"
+                    muted
+                    className="w-full rounded-lg bg-black"
                   />
                   <div className="flex gap-2">
-                    <Button onClick={capturePhoto} className="flex-1">
-                      <Camera className="mr-2 h-4 w-4" />
+                    <Button onClick={capturePhoto} className="flex-1" size="lg">
+                      <Camera className="mr-2 h-5 w-5" />
                       Capture Photo
                     </Button>
                     <Button
                       variant="outline"
+                      size="lg"
                       onClick={() => {
                         const stream = videoRef.current?.srcObject as MediaStream;
                         stream?.getTracks().forEach(track => track.stop());
