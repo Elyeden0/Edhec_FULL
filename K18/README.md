@@ -1,52 +1,69 @@
 # K18 AI Hair Analysis System
 
-AI-powered hair analysis and product recommendation platform combining computer vision, real-time weather data, and intelligent product matching.
+AI-powered hair analysis platform using **ChatGPT-4 Vision** for intelligent hair type detection and personalized K18 product recommendations.
 
 ## 🌟 Features
 
-- **📸 Hair Analysis**: Upload or capture photos for AI-powered hair type detection (dry/normal/oily)
-- **🌦️ Weather Integration**: Real-time weather data based on user location
-- **🛍️ Smart Recommendations**: Personalized K18 product suggestions based on hair type AND climate
-- **💡 Reasoning Engine**: Detailed explanations for each recommendation
+- **🤖 ChatGPT-4 Vision**: Advanced AI analyzes hair condition with natural language explanations
+- **📸 Hair Analysis**: Upload or capture photos for instant hair type detection (dry/normal/oily)
+- **🌦️ Weather Integration**: Real-time weather data for climate-aware recommendations
+- **🛍️ Smart Recommendations**: Personalized K18 product suggestions based on hair + weather
+- **💡 AI Reasoning**: Detailed explanations for each analysis and recommendation
 - **📱 Mobile Responsive**: Works seamlessly on all devices
 
 ## 🚀 Quick Start
 
-### One-Command Start
+### Prerequisites
 
-```bash
-./start.sh
-```
+- **Node.js 18+** (for frontend)
+- **Python 3.8+** (for backend)
+- **OpenAI API Key** ([Get it here](https://platform.openai.com/api-keys))
 
-This will start both the backend API and frontend automatically.
+### Setup
 
-### Manual Start
+1. **Get OpenAI API Key**
+   ```bash
+   # Visit: https://platform.openai.com/api-keys
+   # Create new key and copy it
+   ```
 
-**Backend (Terminal 1):**
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py
-```
+2. **Configure Backend**
+   ```bash
+   cd backend
+   cp .env.example .env
+   # Edit .env and add: OPENAI_API_KEY=sk-your-key-here
+   ```
 
-**Frontend (Terminal 2):**
-```bash
-npm install
-npm run dev
-```
+3. **Install & Run**
+   ```bash
+   # Option 1: One-command start (from K18 directory)
+   ./start.sh
+
+   # Option 2: Manual start
+   # Terminal 1 - Backend:
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   python main.py
+
+   # Terminal 2 - Frontend:
+   npm install
+   npm run dev
+   ```
 
 ### Access the Application
 
-- **Frontend**: http://localhost:5173
+- **Frontend**: http://localhost:8080 (or port shown in terminal)
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 
 ## 📖 Documentation
 
+- **[backend/README.md](backend/README.md)** - ChatGPT-4 Vision API setup & usage
+- **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation guide
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-- **[AI_SYSTEM_README.md](AI_SYSTEM_README.md)** - Complete technical documentation
-- **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Project overview and architecture
-- **[backend/README.md](backend/README.md)** - Backend API reference
+- **[AI_SYSTEM_README.md](AI_SYSTEM_README.md)** - Technical documentation
 
 ## 🏗️ Architecture
 

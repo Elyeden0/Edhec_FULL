@@ -1,31 +1,152 @@
-import { MessageCircle, ExternalLink } from "lucide-react";
+import { MessageCircle, ExternalLink, MapPin, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [cityName, setCityName] = useState<string | null>(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [manualCity, setManualCity] = useState("");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+  // Check if location is already stored
+  useEffect(() => {
+    const locationData = localStorage.getItem('userLocation');
+    if (locationData) {
+      const { latitude, longitude, city } = JSON.parse(locationData);
+      if (city) {
+        setCityName(city);
+      } else if (latitude && longitude) {
+        // Fetch city name if we have coords but no city
+        getCityName(latitude, longitude);
+      }
+    }
+  }, []);
+
+  const getCityName = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      );
+      const data = await response.json();
+      
+      const city = data.address.city || 
+                   data.address.town || 
+                   data.address.village || 
+                   data.address.municipality ||
+                   data.address.county ||
+                   "Unknown location";
+      
+      setCityName(city);
+      
+      // Update localStorage with city name
+      const locationData = JSON.parse(localStorage.getItem('userLocation') || '{}');
+      locationData.city = city;
+      localStorage.setItem('userLocation', JSON.stringify(locationData));
+      
+      return city;
+    } catch (error) {
+      console.error("Error getting city name:", error);
+      return "Unknown location";
+    }
+  };
+
+  const geocodeCity = async (cityName: string) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+          city: cityName
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error geocoding city:", error);
+      return null;
+    }
+  };
+
+  const handleManualLocationSubmit = async () => {
+    if (!manualCity.trim()) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a city name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    const coords = await geocodeCity(manualCity);
+    
+    if (coords) {
+      const locationData = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        city: coords.city,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('userLocation', JSON.stringify(locationData));
+      setCityName(coords.city);
+      setLocationDialogOpen(false);
+      setManualCity("");
+      toast({
+        title: "Location updated",
+        description: `Location set to ${coords.city}`,
+      });
+    } else {
+      toast({
+        title: "City not found",
+        description: "Could not find that city. Please try another name.",
+        variant: "destructive"
+      });
+    }
+    setIsLoadingLocation(false);
+  };
 
   const handleChatClick = () => {
     if ("geolocation" in navigator) {
+      setIsLoadingLocation(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          const city = await getCityName(position.coords.latitude, position.coords.longitude);
           const locationData = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
+            city: city,
             timestamp: new Date().toISOString()
           };
           localStorage.setItem('userLocation', JSON.stringify(locationData));
+          setIsLoadingLocation(false);
           toast({
             title: "Location captured",
-            description: "Your location has been saved for better analysis",
+            description: `Location set to ${city}`,
           });
           navigate("/chat");
         },
         (error) => {
           console.log("Geolocation error:", error);
+          setIsLoadingLocation(false);
           toast({
             title: "Continuing without location",
             description: "Location access was not granted. You can still use the chat.",
@@ -115,14 +236,46 @@ const Index = () => {
           </div>
 
           <div className="pt-8 space-y-4">
+            {/* Location Display */}
+            {cityName && (
+              <div className="bg-secondary/30 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Location: {cityName}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocationDialogOpen(true)}
+                  className="h-8 gap-2"
+                >
+                  <Edit2 className="h-3 w-3" />
+                  Change
+                </Button>
+              </div>
+            )}
+
             <Button
               onClick={handleChatClick}
               size="lg"
+              disabled={isLoadingLocation}
               className="w-full h-20 text-lg font-semibold shadow-[0_0_40px_-10px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_-5px_hsl(var(--primary)/0.5)] transition-all"
             >
               <MessageCircle className="mr-3 h-6 w-6" />
-              Chat with K18
+              {isLoadingLocation ? "Getting location..." : "Chat with K18"}
             </Button>
+
+            {/* Manual location button if no location yet */}
+            {!cityName && (
+              <Button
+                variant="outline"
+                onClick={() => setLocationDialogOpen(true)}
+                className="w-full"
+              >
+                <MapPin className="mr-2 h-4 w-4" />
+                Set Location Manually
+              </Button>
+            )}
           </div>
 
           <div className="pt-12 space-y-3">
@@ -145,6 +298,51 @@ const Index = () => {
           </div>
         </div>
       </main>
+
+      {/* Manual Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Your Location</DialogTitle>
+            <DialogDescription>
+              Enter your city name for accurate weather-based hair analysis
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="city">City Name</Label>
+              <Input
+                id="city"
+                placeholder="e.g., Paris, New York, Tokyo"
+                value={manualCity}
+                onChange={(e) => setManualCity(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleManualLocationSubmit();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLocationDialogOpen(false);
+                setManualCity("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleManualLocationSubmit}
+              disabled={isLoadingLocation}
+            >
+              {isLoadingLocation ? "Finding..." : "Set Location"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

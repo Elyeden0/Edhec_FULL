@@ -1,15 +1,27 @@
 import { useState, useRef, useCallback } from "react";
-import { ArrowLeft, Camera, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, Upload, Loader2, MapPin, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "@/components/Logo";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface HairAnalysisResult {
   hair_type: string;
   confidence: number;
   scores: Record<string, number>;
+  reasoning?: string;
+  characteristics?: string[];
   message: string;
 }
 
@@ -49,6 +61,80 @@ const Chat = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cityName, setCityName] = useState<string | null>(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [manualCity, setManualCity] = useState("");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+  // Load city name on mount
+  useState(() => {
+    const locationData = localStorage.getItem('userLocation');
+    if (locationData) {
+      const { city } = JSON.parse(locationData);
+      if (city) {
+        setCityName(city);
+      }
+    }
+  });
+
+  const geocodeCity = async (cityName: string) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+          city: cityName
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error geocoding city:", error);
+      return null;
+    }
+  };
+
+  const handleManualLocationSubmit = async () => {
+    if (!manualCity.trim()) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a city name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    const coords = await geocodeCity(manualCity);
+    
+    if (coords) {
+      const locationData = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        city: coords.city,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('userLocation', JSON.stringify(locationData));
+      setCityName(coords.city);
+      setLocationDialogOpen(false);
+      setManualCity("");
+      toast({
+        title: "Location updated",
+        description: `Location set to ${coords.city}. Reanalyze your hair for updated recommendations.`,
+      });
+    } else {
+      toast({
+        title: "City not found",
+        description: "Could not find that city. Please try another name.",
+        variant: "destructive"
+      });
+    }
+    setIsLoadingLocation(false);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -192,6 +278,29 @@ const Chat = () => {
             </p>
           </div>
 
+          {/* Location Display */}
+          {cityName && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Current Location: {cityName}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="h-8 gap-2"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    Change
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Upload Controls */}
           {!imagePreview && !cameraActive && (
             <Card>
@@ -296,6 +405,7 @@ const Chat = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Hair Analysis Results</CardTitle>
+                  <CardDescription>Powered by ChatGPT-4 Vision AI</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -307,6 +417,33 @@ const Chat = () => {
                       Confidence: {(analysisResult.hair_analysis.confidence * 100).toFixed(1)}%
                     </p>
                   </div>
+
+                  {/* AI Reasoning */}
+                  {analysisResult.hair_analysis.reasoning && (
+                    <div className="bg-secondary/50 p-4 rounded-lg">
+                      <p className="text-sm font-medium mb-2">AI Analysis</p>
+                      <p className="text-sm text-muted-foreground">
+                        {analysisResult.hair_analysis.reasoning}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Hair Characteristics */}
+                  {analysisResult.hair_analysis.characteristics && analysisResult.hair_analysis.characteristics.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Observed Traits</p>
+                      <div className="flex flex-wrap gap-2">
+                        {analysisResult.hair_analysis.characteristics.map((trait, idx) => (
+                          <span 
+                            key={idx} 
+                            className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
+                          >
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {analysisResult.weather_data.temperature && (
                     <div>
@@ -360,6 +497,51 @@ const Chat = () => {
           )}
         </div>
       </main>
+
+      {/* Manual Location Dialog */}
+      <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Your Location</DialogTitle>
+            <DialogDescription>
+              Enter your city name for accurate weather-based hair analysis
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="city">City Name</Label>
+              <Input
+                id="city"
+                placeholder="e.g., Paris, New York, Tokyo"
+                value={manualCity}
+                onChange={(e) => setManualCity(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleManualLocationSubmit();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLocationDialogOpen(false);
+                setManualCity("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleManualLocationSubmit}
+              disabled={isLoadingLocation}
+            >
+              {isLoadingLocation ? "Finding..." : "Update Location"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

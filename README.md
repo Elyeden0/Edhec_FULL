@@ -151,10 +151,6 @@ python test_system.py
 
 See [AI_SYSTEM_README.md](AI_SYSTEM_README.md) for deployment instructions.
 
-## 📄 Original Project Info
-
-This project was originally created with [Lovable](https://lovable.dev/projects/b208fb45-d9ba-4c15-9a79-79ec44e5fd65).
-
 ## 🤝 Contributing
 
 To extend this system:
