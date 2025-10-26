@@ -80,7 +80,12 @@ const Chat = () => {
   const geocodeCity = async (cityName: string) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'K18HairAnalysis/1.0'
+          }
+        }
       );
       const data = await response.json();
       
@@ -219,6 +224,11 @@ const Chat = () => {
         const { latitude, longitude } = JSON.parse(locationData);
         formData.append("latitude", latitude.toString());
         formData.append("longitude", longitude.toString());
+      }
+      
+      // Add city name if available
+      if (cityName) {
+        formData.append("city", cityName);
       }
 
       const response = await fetch("http://localhost:8000/analyze", {
@@ -414,7 +424,7 @@ const Chat = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Hair Analysis Results</CardTitle>
-                  <CardDescription>Powered by ChatGPT-4 Vision AI</CardDescription>
+                  <CardDescription>Powered by AI Vision Analysis</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -458,7 +468,7 @@ const Chat = () => {
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Current Weather</p>
                       <div className="flex gap-4 text-sm">
-                        <span>🌡️ {analysisResult.weather_data.temperature}°F</span>
+                        <span>🌡️ {analysisResult.weather_data.temperature}°C</span>
                         <span>💧 {analysisResult.weather_data.humidity}%</span>
                         <span className="capitalize">{analysisResult.weather_data.condition.replace("_", " ")}</span>
                       </div>

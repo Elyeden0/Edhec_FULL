@@ -40,15 +40,20 @@ const Index = () => {
   const getCityName = async (latitude: number, longitude: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+        {
+          headers: {
+            'User-Agent': 'K18HairAnalysis/1.0'
+          }
+        }
       );
       const data = await response.json();
       
-      const city = data.address.city || 
-                   data.address.town || 
-                   data.address.village || 
-                   data.address.municipality ||
-                   data.address.county ||
+      const city = data.address?.city || 
+                   data.address?.town || 
+                   data.address?.village || 
+                   data.address?.municipality ||
+                   data.address?.county ||
                    "Unknown location";
       
       setCityName(city);
@@ -68,7 +73,12 @@ const Index = () => {
   const geocodeCity = async (cityName: string) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`
+        `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(cityName)}&format=json&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'K18HairAnalysis/1.0'
+          }
+        }
       );
       const data = await response.json();
       
@@ -125,44 +135,112 @@ const Index = () => {
   };
 
   const handleChatClick = () => {
-    if ("geolocation" in navigator) {
-      setIsLoadingLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
+    // Check if geolocation is supported
+    if (!("geolocation" in navigator)) {
+      console.log("Geolocation not supported");
+      toast({
+        title: "Continuing without location",
+        description: "Your browser doesn't support geolocation. You can set it manually in the chat.",
+      });
+      navigate("/chat");
+      return;
+    }
+
+    // Check permissions first
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        console.log("Geolocation permission state:", result.state);
+        
+        if (result.state === 'denied') {
+          toast({
+            title: "Location Blocked",
+            description: "Please enable location in your browser settings, then refresh the page. You can also set it manually in chat.",
+            variant: "destructive"
+          });
+          navigate("/chat");
+          return;
+        }
+        
+        // Try to get location
+        requestLocation();
+      }).catch((error) => {
+        console.log("Permission query error:", error);
+        // Fallback: try anyway
+        requestLocation();
+      });
+    } else {
+      // No permission API, just try
+      requestLocation();
+    }
+  };
+
+  const requestLocation = () => {
+    setIsLoadingLocation(true);
+    
+    console.log("Requesting geolocation...");
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        console.log("Geolocation success:", position.coords);
+        try {
           const city = await getCityName(position.coords.latitude, position.coords.longitude);
           const locationData = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            city: city,
+            city: city || "Unknown Location",
             timestamp: new Date().toISOString()
           };
           localStorage.setItem('userLocation', JSON.stringify(locationData));
           setIsLoadingLocation(false);
           toast({
-            title: "Location captured",
-            description: `Location set to ${city}`,
+            title: "Location captured! ✓",
+            description: `Location set to ${city || "Unknown Location"}`,
           });
           navigate("/chat");
-        },
-        (error) => {
-          console.log("Geolocation error:", error);
+        } catch (error) {
+          console.error("Error getting city name:", error);
           setIsLoadingLocation(false);
           toast({
-            title: "Continuing without location",
-            description: "Location access was not granted. You can still use the chat.",
+            title: "Location captured",
+            description: "Location saved, but city name couldn't be determined.",
           });
-          // Navigate to chat even without location
           navigate("/chat");
         }
-      );
-    } else {
-      toast({
-        title: "Continuing without location",
-        description: "Your browser doesn't support geolocation, but you can still use the chat.",
-      });
-      // Navigate to chat even without geolocation support
-      navigate("/chat");
-    }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
+        setIsLoadingLocation(false);
+        
+        let errorTitle = "Continuing without location";
+        let errorMessage = "Location access was not granted.";
+        
+        if (error.code === 1) { // PERMISSION_DENIED
+          errorMessage = "🔒 Location permission denied. Please click the location icon in your browser's address bar to enable it, then refresh. You can also set it manually in chat.";
+        } else if (error.code === 2) { // POSITION_UNAVAILABLE
+          errorMessage = "📍 Location information unavailable. Please check your device settings or set manually in chat.";
+        } else if (error.code === 3) { // TIMEOUT
+          errorMessage = "⏱️ Location request timed out. Please try again or set manually in chat.";
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000
+        });
+        
+        // Navigate to chat anyway
+        navigate("/chat");
+      },
+      {
+        enableHighAccuracy: false, // Changed to false for faster response
+        timeout: 15000, // Increased timeout
+        maximumAge: 300000 // Allow cached position up to 5 minutes
+      }
+    );
   };
 
   return (
@@ -264,6 +342,12 @@ const Index = () => {
               <MessageCircle className="mr-3 h-6 w-6" />
               {isLoadingLocation ? "Getting location..." : "Chat with K18"}
             </Button>
+            
+            {!cityName && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                💡 Allow location access for weather-aware hair analysis
+              </p>
+            )}
 
             {/* Manual location button if no location yet */}
             {!cityName && (
