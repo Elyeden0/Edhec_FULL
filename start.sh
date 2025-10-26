@@ -1,73 +1,149 @@
 #!/bin/bash
 
-# K18 Hair Analysis System - Startup Script
-# Starts both frontend and backend services
+# K18 Hair Analysis AI - Startup Script
+# Uses Google Gemini (FREE) or Ollama (local) for hair analysis
+# This script starts both the backend API and frontend development server
 
-echo "🚀 Starting K18 Hair Analysis System..."
+echo "🚀 Starting K18 Hair Analysis AI System..."
 echo ""
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Get the script's directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
-# Check if we're in the right directory
-if [ ! -d "K18" ]; then
-    echo "❌ Error: K18 directory not found. Please run this script from the Edhec_FULL directory."
+# Navigate to K18 directory
+if [ -d "K18" ]; then
+    cd K18
+else
+    echo "❌ Error: K18 directory not found"
     exit 1
 fi
 
-cd K18
+# Check if we're in the K18 directory
+if [ ! -f "package.json" ]; then
+    echo "❌ Error: K18 directory is missing package.json"
+    exit 1
+fi
+
+# Check if Python is installed
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Error: Python 3 is not installed"
+    exit 1
+fi
+
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: Node.js is not installed"
+    exit 1
+fi
 
 # Function to check if a port is in use
 check_port() {
-    lsof -i :$1 > /dev/null 2>&1
-    return $?
+    lsof -ti:$1 &> /dev/null
 }
 
-# Check if backend is already running
+# Function to kill process on port
+kill_port() {
+    local port=$1
+    local pids=$(lsof -ti:$port 2>/dev/null)
+    if [ ! -z "$pids" ]; then
+        echo "🛑 Stopping existing service on port $port..."
+        kill $pids 2>/dev/null
+        sleep 2
+    fi
+}
+
+# Check and stop existing services
 if check_port 8000; then
-    echo -e "${YELLOW}⚠️  Backend already running on port 8000${NC}"
-else
-    echo -e "${BLUE}📦 Starting Backend (FastAPI)...${NC}"
-    cd backend
-    # Start backend in background
-    python3 main.py > ../backend.log 2>&1 &
-    BACKEND_PID=$!
-    echo -e "${GREEN}✓ Backend started (PID: $BACKEND_PID)${NC}"
-    cd ..
+    echo "⚠️  Port 8000 is already in use"
+    kill_port 8000
 fi
 
-# Check if frontend is already running
 if check_port 8080; then
-    echo -e "${YELLOW}⚠️  Frontend already running on port 8080${NC}"
-elif check_port 8081; then
-    echo -e "${YELLOW}⚠️  Frontend already running on port 8081${NC}"
+    echo "⚠️  Port 8080 is already in use"
+    kill_port 8080
+fi
+
+# Install Python dependencies if needed
+echo "📦 Checking backend dependencies..."
+if [ ! -d "backend/venv" ]; then
+    echo "Creating Python virtual environment..."
+    cd backend
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    cd ..
 else
-    echo -e "${BLUE}🎨 Starting Frontend (Vite)...${NC}"
-    # Start frontend in background
-    npm run dev > frontend.log 2>&1 &
-    FRONTEND_PID=$!
-    echo -e "${GREEN}✓ Frontend started (PID: $FRONTEND_PID)${NC}"
+    echo "✓ Virtual environment exists"
+fi
+
+# Install Node dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing frontend dependencies..."
+    npm install
+else
+    echo "✓ Node modules installed"
 fi
 
 echo ""
-echo -e "${GREEN}✨ K18 Hair Analysis System is starting up!${NC}"
+echo "✨ Starting services..."
 echo ""
-echo "📍 Services:"
-echo "   - Backend API: http://localhost:8000"
-echo "   - Frontend UI: http://localhost:8080 (or 8081, 5173)"
-echo "   - API Docs: http://localhost:8000/docs"
-echo ""
-echo "📋 Logs:"
-echo "   - Backend: K18/backend.log"
-echo "   - Frontend: K18/frontend.log"
-echo ""
-echo "⏹️  To stop services, run: pkill -f 'python3 main.py' && pkill -f 'vite'"
-echo ""
-echo "Press Ctrl+C to exit this script (services will continue running in background)"
+echo "💡 AI Provider: Google Gemini (FREE) → Ollama → Fallback"
+echo "   Get Gemini key: https://aistudio.google.com/apikey"
 echo ""
 
-# Keep script running
-wait
+# Start backend in background
+echo "🐍 Starting Backend API (Port 8000)..."
+cd backend
+nohup "$(pwd)/venv/bin/python" main.py > /tmp/k18-backend.log 2>&1 &
+BACKEND_PID=$!
+echo $BACKEND_PID > /tmp/k18-backend.pid
+cd ..
+
+# Wait for backend to start
+echo "⏳ Waiting for backend to initialize..."
+for i in {1..15}; do
+    if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+        echo "✓ Backend started successfully (PID: $BACKEND_PID)"
+        break
+    fi
+    if [ $i -eq 15 ]; then
+        echo "❌ Backend failed to start. Check logs: tail -f /tmp/k18-backend.log"
+        exit 1
+    fi
+    sleep 1
+done
+
+# Start frontend in background
+echo "⚛️  Starting Frontend (Port 8080)..."
+nohup npm run dev > /tmp/k18-frontend.log 2>&1 &
+FRONTEND_PID=$!
+echo $FRONTEND_PID > /tmp/k18-frontend.pid
+
+# Wait for frontend to start
+echo "⏳ Waiting for frontend to initialize..."
+for i in {1..15}; do
+    if curl -s http://localhost:8080 > /dev/null 2>&1; then
+        echo "✓ Frontend started successfully (PID: $FRONTEND_PID)"
+        break
+    fi
+    if [ $i -eq 15 ]; then
+        echo "❌ Frontend failed to start. Check logs: tail -f /tmp/k18-frontend.log"
+        exit 1
+    fi
+    sleep 1
+done
+
+echo ""
+echo "✅ Services started successfully!"
+echo ""
+echo "📍 Backend API:  http://localhost:8000"
+echo "📍 API Docs:     http://localhost:8000/docs"
+echo "📍 Frontend:     http://localhost:8080"
+echo ""
+echo "📝 Logs:"
+echo "   Backend:  tail -f /tmp/k18-backend.log"
+echo "   Frontend: tail -f /tmp/k18-frontend.log"
+echo ""
+echo "💡 To stop services, run: ./stop.sh"
+echo ""
