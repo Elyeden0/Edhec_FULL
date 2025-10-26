@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # K18 Hair Analysis AI - Startup Script
+# Uses Google Gemini (FREE) or Ollama (local) for hair analysis
 # This script starts both the backend API and frontend development server
 
 echo "🚀 Starting K18 Hair Analysis AI System..."
@@ -47,6 +48,9 @@ fi
 
 echo ""
 echo "✨ Starting services..."
+echo ""
+echo "💡 AI Provider: Google Gemini (FREE) → Ollama → Fallback"
+echo "   Get Gemini key: https://aistudio.google.com/apikey"
 echo ""
 
 # Function to cleanup on exit

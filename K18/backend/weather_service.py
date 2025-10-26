@@ -12,14 +12,14 @@ class WeatherService:
     def get_weather(self, latitude: float, longitude: float) -> Dict:
         """
         Get current weather data for given coordinates
-        Returns temperature, humidity, precipitation, and weather condition
+        Returns temperature (in Celsius), humidity, precipitation, and weather condition
         """
         try:
             params = {
                 "latitude": latitude,
                 "longitude": longitude,
                 "current": "temperature_2m,relative_humidity_2m,precipitation,weather_code",
-                "temperature_unit": "fahrenheit"
+                "temperature_unit": "celsius"
             }
             
             response = requests.get(self.base_url, params=params, timeout=10)

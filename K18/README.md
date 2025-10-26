@@ -1,15 +1,16 @@
 # K18 AI Hair Analysis System
 
-AI-powered hair analysis platform using **ChatGPT-4 Vision** for intelligent hair type detection and personalized K18 product recommendations.
+AI-powered hair analysis platform using **Google Gemini** (FREE) or **Ollama** (local) for intelligent hair type detection and personalized K18 product recommendations.
 
 ## 🌟 Features
 
-- **🤖 ChatGPT-4 Vision**: Advanced AI analyzes hair condition with natural language explanations
+- **🤖 Google Gemini AI**: Advanced FREE vision AI analyzes hair condition with natural language explanations
 - **📸 Hair Analysis**: Upload or capture photos for instant hair type detection (dry/normal/oily)
 - **🌦️ Weather Integration**: Real-time weather data for climate-aware recommendations
 - **🛍️ Smart Recommendations**: Personalized K18 product suggestions based on hair + weather
 - **💡 AI Reasoning**: Detailed explanations for each analysis and recommendation
 - **📱 Mobile Responsive**: Works seamlessly on all devices
+- **💯 100% FREE**: No API costs with Gemini's generous free tier (1,500/day)
 
 ## 🚀 Quick Start
 
@@ -17,21 +18,21 @@ AI-powered hair analysis platform using **ChatGPT-4 Vision** for intelligent hai
 
 - **Node.js 18+** (for frontend)
 - **Python 3.8+** (for backend)
-- **OpenAI API Key** ([Get it here](https://platform.openai.com/api-keys))
+- **Google Gemini API Key** (FREE - [Get it here](https://aistudio.google.com/apikey))
 
 ### Setup
 
-1. **Get OpenAI API Key**
+1. **Get FREE Gemini API Key**
    ```bash
-   # Visit: https://platform.openai.com/api-keys
-   # Create new key and copy it
+   # Visit: https://aistudio.google.com/apikey
+   # Create API key (no credit card required!)
    ```
 
 2. **Configure Backend**
    ```bash
    cd backend
    cp .env.example .env
-   # Edit .env and add: OPENAI_API_KEY=sk-your-key-here
+   # Edit .env and add: GEMINI_API_KEY=AIza-your-key-here
    ```
 
 3. **Install & Run**
@@ -60,7 +61,9 @@ AI-powered hair analysis platform using **ChatGPT-4 Vision** for intelligent hai
 
 ## 📖 Documentation
 
-- **[backend/README.md](backend/README.md)** - ChatGPT-4 Vision API setup & usage
+- **[GEMINI_SETUP.md](GEMINI_SETUP.md)** - Google Gemini setup (RECOMMENDED - FREE)
+- **[backend/README.md](backend/README.md)** - Ollama & AI setup options
+- **[AI_COMPARISON.md](AI_COMPARISON.md)** - Compare Gemini vs Ollama vs Fallback
 - **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation guide
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 - **[AI_SYSTEM_README.md](AI_SYSTEM_README.md)** - Technical documentation

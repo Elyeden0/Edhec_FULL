@@ -1,5 +1,5 @@
 """FastAPI Backend for K18 Hair Analysis
-Main API endpoint using ChatGPT-4 Vision for hair analysis
+Main API endpoint using Google Gemini AI for hair analysis
 """
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +20,7 @@ from product_recommender import ProductRecommender
 app = FastAPI(
     title="K18 Hair Analysis API",
     version="2.0.0",
-    description="AI-powered hair analysis using ChatGPT-4 Vision"
+    description="AI-powered hair analysis using Google Gemini AI"
 )
 
 # Enable CORS for React frontend
@@ -48,7 +48,7 @@ async def root():
     return {
         "name": "K18 Hair Analysis API",
         "version": "2.0.0",
-        "ai_engine": "ChatGPT-4 Vision",
+        "ai_engine": "Google Gemini AI",
         "status": "operational",
         "endpoints": {
             "POST /analyze": "Analyze hair image and get K18 product recommendations",
@@ -60,18 +60,19 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    api_key_set = bool(os.getenv("OPENAI_API_KEY"))
+    api_key_set = bool(os.getenv("GEMINI_API_KEY"))
     return {
         "status": "healthy",
         "api_configured": api_key_set,
-        "message": "API is operational" if api_key_set else "Warning: OPENAI_API_KEY not set"
+        "message": "API is operational" if api_key_set else "Warning: GEMINI_API_KEY not set"
     }
 
 @app.post("/analyze")
 async def analyze_hair(
     image: UploadFile = File(...),
     latitude: Optional[float] = Form(None),
-    longitude: Optional[float] = Form(None)
+    longitude: Optional[float] = Form(None),
+    city: Optional[str] = Form(None)
 ):
     """
     Main endpoint: Analyze hair from image and provide product recommendations
@@ -80,6 +81,7 @@ async def analyze_hair(
     - image: Hair image file
     - latitude: User's latitude (optional, for weather data)
     - longitude: User's longitude (optional, for weather data)
+    - city: User's city name (optional, for location context)
     
     Returns:
     - hair_analysis: Hair type, confidence, scores with weather-aware reasoning
@@ -110,6 +112,10 @@ async def analyze_hair(
                 "is_rainy": False,
                 "message": "Location not provided"
             }
+        
+        # Add city to weather data if provided
+        if city:
+            weather_data["city"] = city
         
         # Analyze hair condition WITH weather context
         hair_analysis = hair_analyzer.analyze_hair(img, weather_data=weather_data)
