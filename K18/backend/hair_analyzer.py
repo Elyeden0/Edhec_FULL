@@ -71,7 +71,71 @@ class HairAnalyzer:
             image.save(buffered, format="JPEG", quality=90)
             img_base64 = base64.b64encode(buffered.getvalue()).decode()
             
-            # Build weather context
+            # STEP 1: Validate that the image contains hair
+            validation_prompt = """Look at this image carefully. Does it show human hair? 
+            
+Respond with ONLY valid JSON in this format:
+{
+  "contains_hair": true or false,
+  "confidence": 0.95,
+  "reason": "Brief explanation of what you see"
+}
+
+If the image shows hair (even if blurry or partial), set contains_hair to true.
+If the image shows anything else (faces, objects, scenery, animals, etc.), set contains_hair to false."""
+            
+            validation_payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": validation_prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": img_base64
+                            }
+                        }
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "topK": 32,
+                    "topP": 1,
+                    "maxOutputTokens": 200,
+                    "responseMimeType": "application/json"
+                }
+            }
+            
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={self.gemini_api_key}"
+            validation_response = requests.post(url, json=validation_payload, timeout=30)
+            
+            if validation_response.status_code == 200:
+                validation_data = validation_response.json()
+                if "candidates" in validation_data and validation_data["candidates"]:
+                    validation_text = validation_data["candidates"][0]["content"]["parts"][0]["text"]
+                    
+                    # Parse validation response
+                    try:
+                        validation_text = validation_text.strip()
+                        if validation_text.startswith("```json"):
+                            validation_text = validation_text.split("```json")[1].split("```")[0].strip()
+                        elif validation_text.startswith("```"):
+                            validation_text = validation_text.split("```")[1].split("```")[0].strip()
+                        
+                        validation_result = json.loads(validation_text)
+                        
+                        # Check if image contains hair
+                        if not validation_result.get("contains_hair", False):
+                            return {
+                                "error": True,
+                                "error_type": "invalid_image",
+                                "message": "Please upload a clear photo of your hair for accurate analysis.",
+                                "details": validation_result.get("reason", "The image doesn't appear to show hair.")
+                            }
+                    except Exception as e:
+                        print(f"Validation parse error: {e}")
+                        # Continue with analysis if validation fails
+            
+            # STEP 2: Build weather context
             weather_context = ""
             location_context = ""
             
@@ -97,7 +161,7 @@ Consider weather impact on hair:
             if weather_data and weather_data.get("city"):
                 location_context = f"\nThe photo was taken here: {weather_data.get('city')}\n"
             
-            # Create prompt
+            # STEP 3: Create analysis prompt
             prompt = f"""You are an expert hair analyst. Analyze this hair image and determine the hair type and texture.
 
 HAIR TYPE DEFINITIONS (Moisture Level):

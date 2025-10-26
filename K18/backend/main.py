@@ -120,6 +120,17 @@ async def analyze_hair(
         # Analyze hair condition WITH weather context
         hair_analysis = hair_analyzer.analyze_hair(img, weather_data=weather_data)
         
+        # Check if analysis returned an error (invalid image)
+        if hair_analysis.get("error"):
+            raise HTTPException(
+                status_code=400, 
+                detail={
+                    "error_type": hair_analysis.get("error_type"),
+                    "message": hair_analysis.get("message"),
+                    "details": hair_analysis.get("details")
+                }
+            )
+        
         # Get product recommendations
         recommendations = product_recommender.recommend(
             hair_type=hair_analysis["hair_type"],

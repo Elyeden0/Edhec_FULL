@@ -93,7 +93,22 @@ const Results = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Analysis failed");
+        const errorData = await response.json().catch(() => null);
+        
+        // Check if it's an invalid image error
+        if (errorData?.detail?.error_type === "invalid_image") {
+          toast({
+            title: "Invalid Image",
+            description: errorData.detail.message || "Please upload a clear photo of your hair.",
+            variant: "destructive",
+            duration: 6000,
+          });
+          // Go back to photo step
+          setTimeout(() => navigate("/step2"), 2000);
+          return;
+        }
+        
+        throw new Error(errorData?.detail?.message || "Analysis failed");
       }
 
       const data: AnalysisResponse = await response.json();
@@ -103,9 +118,11 @@ const Results = () => {
       console.error("Analysis error:", error);
       toast({
         title: "Analysis Failed",
-        description: "There was an error analyzing your hair. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error analyzing your hair. Please try again.",
         variant: "destructive"
       });
+      // Go back to photo step after a short delay
+      setTimeout(() => navigate("/step2"), 2000);
     } finally {
       setAnalyzing(false);
     }
