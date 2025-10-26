@@ -40,20 +40,156 @@ class HairAnalyzer:
             image: PIL Image of hair
             weather_data: Optional weather context (temperature, humidity, condition)
         """
+        # FIRST: Validate image contains hair (critical step)
+        validation_result = self._validate_image_contains_hair(image)
+        if validation_result.get("error"):
+            return validation_result
+        
         # Try Gemini first if configured (FREE and better than GPT-4)
         if self.use_gemini:
             result = self._analyze_with_gemini(image, weather_data)
-            if result:
+            if result and not result.get("error"):
                 return result
         
         # Try Ollama if enabled
         if self.use_ollama:
             result = self._analyze_with_ollama(image, weather_data)
-            if result:
+            if result and not result.get("error"):
                 return result
         
         # Fallback to simple analysis
         return self._analyze_simple(image, weather_data)
+    
+    def _validate_image_contains_hair(self, image: Image.Image) -> Dict:
+        """
+        Validate that the image contains hair before analysis.
+        Uses Gemini first, then basic image checks as fallback.
+        Returns error dict if validation fails, empty dict if passes.
+        """
+        # Try Gemini validation if available
+        if self.use_gemini:
+            try:
+                import requests
+                
+                # Resize and convert image to base64
+                buffered = BytesIO()
+                max_size = 512  # Smaller for faster validation
+                if max(image.size) > max_size:
+                    ratio = max_size / max(image.size)
+                    new_size = tuple(int(dim * ratio) for dim in image.size)
+                    img_resized = image.resize(new_size, Image.Resampling.LANCZOS)
+                else:
+                    img_resized = image
+                
+                img_resized.save(buffered, format="JPEG", quality=85)
+                img_base64 = base64.b64encode(buffered.getvalue()).decode()
+                
+                validation_prompt = """Look at this image very carefully. Does it clearly show human hair?
+
+IMPORTANT: Be STRICT. Only return true if you can clearly see hair strands, hair texture, or hair as the main subject.
+
+Return false if you see:
+- Faces or full body shots (even if hair is visible)
+- Objects, scenery, or random things
+- Animals
+- Unclear or blurry images where hair is not the focus
+- Anything that is not primarily focused on hair
+
+Respond with ONLY valid JSON:
+{
+  "contains_hair": true or false,
+  "confidence": 0.95,
+  "what_i_see": "Brief description"
+}"""
+                
+                validation_payload = {
+                    "contents": [{
+                        "parts": [
+                            {"text": validation_prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": img_base64
+                                }
+                            }
+                        ]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.1,  # Very low for strict validation
+                        "topK": 10,
+                        "topP": 0.5,
+                        "maxOutputTokens": 150,
+                        "responseMimeType": "application/json"
+                    }
+                }
+                
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={self.gemini_api_key}"
+                response = requests.post(url, json=validation_payload, timeout=15)
+                
+                if response.status_code == 200:
+                    result_data = response.json()
+                    if "candidates" in result_data and result_data["candidates"]:
+                        result_text = result_data["candidates"][0]["content"]["parts"][0]["text"]
+                        
+                        # Parse validation response
+                        result_text = result_text.strip()
+                        if result_text.startswith("```json"):
+                            result_text = result_text.split("```json")[1].split("```")[0].strip()
+                        elif result_text.startswith("```"):
+                            result_text = result_text.split("```")[1].split("```")[0].strip()
+                        
+                        validation = json.loads(result_text)
+                        
+                        print(f"[VALIDATION] Contains hair: {validation.get('contains_hair')}, Confidence: {validation.get('confidence')}, Sees: {validation.get('what_i_see')}")
+                        
+                        # Strict validation: must have hair AND high confidence
+                        if not validation.get("contains_hair", False) or validation.get("confidence", 0) < 0.6:
+                            return {
+                                "error": True,
+                                "error_type": "invalid_image",
+                                "message": "Please upload a clear photo of your hair for accurate analysis.",
+                                "details": validation.get("what_i_see", "Image doesn't appear to show hair clearly.")
+                            }
+                        
+                        # Validation passed
+                        return {}
+                        
+            except Exception as e:
+                print(f"[VALIDATION] Gemini validation error: {e}")
+                # Continue to fallback validation
+        
+        # Fallback: Basic image validation (less accurate but better than nothing)
+        try:
+            img_array = np.array(image)
+            
+            # Check if image is too dark (likely not a good hair photo)
+            brightness = np.mean(img_array)
+            if brightness < 30:
+                return {
+                    "error": True,
+                    "error_type": "invalid_image",
+                    "message": "Please upload a clearer, well-lit photo of your hair.",
+                    "details": "Image is too dark to analyze properly."
+                }
+            
+            # Check if image is too uniform (might be a solid color or blank)
+            std_dev = np.std(img_array)
+            if std_dev < 10:
+                return {
+                    "error": True,
+                    "error_type": "invalid_image",
+                    "message": "Please upload a clear photo of your hair for accurate analysis.",
+                    "details": "Image appears to be blank or too uniform."
+                }
+            
+            # If we get here, image passes basic checks
+            print("[VALIDATION] Passed basic image validation checks")
+            return {}
+            
+        except Exception as e:
+            print(f"[VALIDATION] Basic validation error: {e}")
+            # In case of validation error, let it proceed (don't block user)
+            return {}
     
     def _analyze_with_gemini(self, image: Image.Image, weather_data: Dict = None) -> Optional[Dict]:
         """Analyze using Google Gemini 2.0 Flash API (FREE)"""
@@ -71,71 +207,7 @@ class HairAnalyzer:
             image.save(buffered, format="JPEG", quality=90)
             img_base64 = base64.b64encode(buffered.getvalue()).decode()
             
-            # STEP 1: Validate that the image contains hair
-            validation_prompt = """Look at this image carefully. Does it show human hair? 
-            
-Respond with ONLY valid JSON in this format:
-{
-  "contains_hair": true or false,
-  "confidence": 0.95,
-  "reason": "Brief explanation of what you see"
-}
-
-If the image shows hair (even if blurry or partial), set contains_hair to true.
-If the image shows anything else (faces, objects, scenery, animals, etc.), set contains_hair to false."""
-            
-            validation_payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": validation_prompt},
-                        {
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": img_base64
-                            }
-                        }
-                    ]
-                }],
-                "generationConfig": {
-                    "temperature": 0.3,
-                    "topK": 32,
-                    "topP": 1,
-                    "maxOutputTokens": 200,
-                    "responseMimeType": "application/json"
-                }
-            }
-            
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={self.gemini_api_key}"
-            validation_response = requests.post(url, json=validation_payload, timeout=30)
-            
-            if validation_response.status_code == 200:
-                validation_data = validation_response.json()
-                if "candidates" in validation_data and validation_data["candidates"]:
-                    validation_text = validation_data["candidates"][0]["content"]["parts"][0]["text"]
-                    
-                    # Parse validation response
-                    try:
-                        validation_text = validation_text.strip()
-                        if validation_text.startswith("```json"):
-                            validation_text = validation_text.split("```json")[1].split("```")[0].strip()
-                        elif validation_text.startswith("```"):
-                            validation_text = validation_text.split("```")[1].split("```")[0].strip()
-                        
-                        validation_result = json.loads(validation_text)
-                        
-                        # Check if image contains hair
-                        if not validation_result.get("contains_hair", False):
-                            return {
-                                "error": True,
-                                "error_type": "invalid_image",
-                                "message": "Please upload a clear photo of your hair for accurate analysis.",
-                                "details": validation_result.get("reason", "The image doesn't appear to show hair.")
-                            }
-                    except Exception as e:
-                        print(f"Validation parse error: {e}")
-                        # Continue with analysis if validation fails
-            
-            # STEP 2: Build weather context
+            # Build weather context
             weather_context = ""
             location_context = ""
             
@@ -161,7 +233,7 @@ Consider weather impact on hair:
             if weather_data and weather_data.get("city"):
                 location_context = f"\nThe photo was taken here: {weather_data.get('city')}\n"
             
-            # STEP 3: Create analysis prompt
+            # Create analysis prompt
             prompt = f"""You are an expert hair analyst. Analyze this hair image and determine the hair type and texture.
 
 HAIR TYPE DEFINITIONS (Moisture Level):
