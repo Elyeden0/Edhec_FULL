@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Caméra - K18</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 5px;
+            margin: 20px 0;
+            background: #000;
+        }
+        .hidden {
+            display: none;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Test de Caméra - K18</h1>
+        
+        <div id="browserInfo" class="status info">
+            <strong>Navigateur:</strong> <span id="browser"></span><br>
+            <strong>URL:</strong> <span id="url"></span><br>
+            <strong>Protocol:</strong> <span id="protocol"></span>
+        </div>
+
+        <div id="status"></div>
+
+        <button id="testBtn" onclick="testCamera()">Tester la Caméra</button>
+        <button id="stopBtn" onclick="stopCamera()" class="hidden">Arrêter</button>
+        <button onclick="checkPermissions()">Vérifier Permissions</button>
+
+        <video id="video" autoplay playsinline muted class="hidden"></video>
+
+        <div id="details"></div>
+    </div>
+
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
+        const statusDiv = document.getElementById('status');
+        const detailsDiv = document.getElementById('details');
+        const testBtn = document.getElementById('testBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        // Display browser info
+        document.getElementById('browser').textContent = navigator.userAgent;
+        document.getElementById('url').textContent = window.location.href;
+        document.getElementById('protocol').textContent = window.location.protocol;
+
+        // Check if HTTPS
+        if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
+            statusDiv.innerHTML = '<div class="status error">⚠️ Attention: Vous utilisez HTTP. La caméra nécessite HTTPS (sauf sur localhost).</div>';
+        }
+
+        async function checkPermissions() {
+            statusDiv.innerHTML = '<div class="status info">Vérification des permissions...</div>';
+            
+            try {
+                // Check if mediaDevices is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("MediaDevices API non supportée");
+                }
+
+                // Try to query permission (not supported in all browsers)
+                if (navigator.permissions && navigator.permissions.query) {
+                    try {
+                        const result = await navigator.permissions.query({ name: 'camera' });
+                        statusDiv.innerHTML = `<div class="status ${result.state === 'granted' ? 'success' : result.state === 'denied' ? 'error' : 'info'}">
+                            📋 État de la permission caméra: <strong>${result.state}</strong>
+                        </div>`;
+                    } catch (e) {
+                        statusDiv.innerHTML = '<div class="status info">⚠️ Impossible de vérifier les permissions (pas supporté dans ce navigateur)</div>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div class="status info">⚠️ API Permissions non disponible dans ce navigateur</div>';
+                }
+
+                // Enumerate devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                let deviceInfo = '<h3>Caméras Disponibles:</h3><pre>';
+                if (videoDevices.length === 0) {
+                    deviceInfo += '❌ Aucune caméra détectée\n';
+                } else {
+                    videoDevices.forEach((device, i) => {
+                        deviceInfo += `✓ Caméra ${i + 1}: ${device.label || 'Non nommée'} (ID: ${device.deviceId.substr(0, 20)}...)\n`;
+                    });
+                }
+                deviceInfo += '</pre>';
+                detailsDiv.innerHTML = deviceInfo;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                console.error(error);
+            }
+        }
+
+        async function testCamera() {
+            statusDiv.innerHTML = '<div class="status info">🔄 Demande d\'accès à la caméra...</div>';
+            testBtn.disabled = true;
+
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: "user",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                console.log('Requesting camera with constraints:', constraints);
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                console.log('Stream obtained:', stream);
+                console.log('Video tracks:', stream.getVideoTracks());
+
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                stopBtn.classList.remove('hidden');
+
+                // Wait for video to be ready
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        statusDiv.innerHTML = '<div class="status success">✅ Caméra activée avec succès!</div>';
+                        
+                        const track = stream.getVideoTracks()[0];
+                        const settings = track.getSettings();
+                        
+                        detailsDiv.innerHTML = `
+                            <h3>Informations de la Caméra:</h3>
+                            <pre>
+Label: ${track.label}
+Résolution: ${settings.width}x${settings.height}
+Frame Rate: ${settings.frameRate} fps
+Facing Mode: ${settings.facingMode || 'non spécifié'}
+                            </pre>
+                        `;
+                    }).catch(err => {
+                        statusDiv.innerHTML = `<div class="status error">❌ Erreur lors de la lecture: ${err.message}</div>`;
+                        console.error('Play error:', err);
+                    });
+                };
+
+                video.onerror = (err) => {
+                    statusDiv.innerHTML = `<div class="status error">❌ Erreur vidéo: ${err}</div>`;
+                    console.error('Video error:', err);
+                };
+
+            } catch (error) {
+                console.error('Camera error:', error);
+                
+                let errorMsg = 'Erreur inconnue';
+                let solution = '';
+
+                switch(error.name) {
+                    case 'NotAllowedError':
+                    case 'PermissionDeniedError':
+                        errorMsg = 'Permission refusée';
+                        solution = 'Cliquez sur l\'icône 🔒 ou 🎥 dans la barre d\'adresse pour autoriser l\'accès.';
+                        break;
+                    case 'NotFoundError':
+                    case 'DevicesNotFoundError':
+                        errorMsg = 'Aucune caméra trouvée';
+                        solution = 'Vérifiez qu\'une caméra est connectée et reconnue par votre système.';
+                        break;
+                    case 'NotReadableError':
+                    case 'TrackStartError':
+                        errorMsg = 'Caméra déjà utilisée';
+                        solution = 'Fermez les autres applications utilisant la caméra (Zoom, Skype, etc.).';
+                        break;
+                    case 'OverconstrainedError':
+                        errorMsg = 'Paramètres non supportés';
+                        solution = 'La caméra ne supporte pas la résolution demandée.';
+                        break;
+                    case 'SecurityError':
+                        errorMsg = 'Erreur de sécurité';
+                        solution = 'Le site doit être en HTTPS pour accéder à la caméra.';
+                        break;
+                    default:
+                        errorMsg = error.message;
+                }
+
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ ${errorMsg}</strong><br>
+                        ${solution}
+                    </div>
+                `;
+                
+                detailsDiv.innerHTML = `<pre>Détails de l'erreur:\n${JSON.stringify(error, null, 2)}</pre>`;
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+                video.classList.add('hidden');
+                stopBtn.classList.add('hidden');
+                statusDiv.innerHTML = '<div class="status info">Caméra arrêtée</div>';
+            }
+        }
+
+        // Auto-check on load
+        window.onload = checkPermissions;
+    </script>
+</body>
+</html>

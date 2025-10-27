@@ -9,6 +9,7 @@ import Step2Photo from "./pages/Step2Photo";
 import Results from "./pages/Results";
 import Products from "./pages/Products";
 import RgpdPolicy from "./pages/RgpdPolicy";
+import CameraDebug from "./pages/CameraDebug";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/results" element={<Results />} />
           <Route path="/products" element={<Products />} />
           <Route path="/rgpd-policy" element={<RgpdPolicy />} />
+          <Route path="/camera-debug" element={<CameraDebug />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
