@@ -15,7 +15,7 @@ import os
 class HairAnalyzer:
     def __init__(self):
         """Initialize analyzer with multi-provider support"""
-        self.classes = ["dry", "normal", "oily"]
+        self.classes = ["dry", "normal", "oily", "bald"]
         
         # Check which providers are available
         self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
@@ -84,20 +84,26 @@ class HairAnalyzer:
                 img_resized.save(buffered, format="JPEG", quality=85)
                 img_base64 = base64.b64encode(buffered.getvalue()).decode()
                 
-                validation_prompt = """Look at this image very carefully. Does it clearly show human hair?
+                validation_prompt = """Look at this image very carefully. Does it clearly show human hair or scalp?
 
-IMPORTANT: Be STRICT. Only return true if you can clearly see hair strands, hair texture, or hair as the main subject.
+IMPORTANT: Be FLEXIBLE but accurate. Return true if:
+- You can clearly see hair strands, hair texture, or hair as the main subject
+- You see a bald head or scalp (this is VALID - we can analyze scalp health)
+- You see significant hair loss or thinning
 
-Return false if you see:
+Return false ONLY if you see:
 - Faces or full body shots (even if hair is visible)
 - Objects, scenery, or random things
 - Animals
-- Unclear or blurry images where hair is not the focus
-- Anything that is not primarily focused on hair
+- Unclear or blurry images where hair/scalp is not the focus
+- Anything that is not primarily focused on hair or scalp
+
+IMPORTANT: If you detect baldness or significant hair loss, still return true with a note in "what_i_see".
 
 Respond with ONLY valid JSON:
 {
   "contains_hair": true or false,
+  "is_bald_or_thinning": true or false,
   "confidence": 0.95,
   "what_i_see": "Brief description"
 }"""
@@ -234,28 +240,34 @@ Consider weather impact on hair:
                 location_context = f"\nThe photo was taken here: {weather_data.get('city')}\n"
             
             # Create analysis prompt
-            prompt = f"""You are an expert hair analyst. Analyze this hair image and determine the hair type and texture.
+            prompt = f"""You are an expert hair and scalp analyst. Analyze this image and determine the hair/scalp condition.
+
+IMPORTANT: First check if the person is bald or has significant hair loss/thinning.
 
 HAIR TYPE DEFINITIONS (Moisture Level):
+- BALD: No hair or minimal hair coverage, visible scalp, significant hair loss
 - DRY: Dull appearance, rough texture, frizzy, lacks shine, brittle, split ends
 - NORMAL: Balanced moisture, healthy shine, smooth texture, manageable, elastic
 - OILY: Very shiny/greasy appearance, flat/limp, stringy, lacks volume, needs frequent washing
 
-HAIR TEXTURE DEFINITIONS (Pattern):
+HAIR TEXTURE DEFINITIONS (Pattern - only if hair is present):
 - STRAIGHT: No curl pattern, hair falls straight down
 - WAVY: S-shaped waves, some body and movement
 - CURLY: Defined curls, spiral or ringlet pattern
 - COILY: Very tight curls or zigzag pattern, kinky texture
+- NONE: No hair present (for bald)
 
 {location_context}
 {weather_context}
 
 Analyze the image carefully and respond with ONLY valid JSON in this exact format:
 {{
-  "hair_type": "dry" or "normal" or "oily",
-  "hair_texture": "straight" or "wavy" or "curly" or "coily",
+  "hair_type": "bald" or "dry" or "normal" or "oily",
+  "hair_texture": "none" or "straight" or "wavy" or "curly" or "coily",
+  "is_bald": true or false,
+  "baldness_level": "none" or "minimal" or "partial" or "complete",
   "confidence": 0.85,
-  "reasoning": "2-3 sentences explaining your analysis of BOTH moisture level and texture. If weather data provided, explain how it impacts this hair type.",
+  "reasoning": "2-3 sentences explaining your analysis. If bald, mention scalp condition. If hair present, explain BOTH moisture level and texture. If weather data provided, explain impact.",
   "characteristics": ["specific trait 1", "specific trait 2", "specific trait 3"]
 }}
 
@@ -339,6 +351,9 @@ Important: Respond ONLY with the JSON object, no other text."""
                 "scores": scores,
                 "reasoning": result.get("reasoning", "Hair analysis complete"),
                 "characteristics": result.get("characteristics", []),
+                "is_bald": result.get("is_bald", False),
+                "baldness_level": result.get("baldness_level", "none"),
+                "hair_texture": result.get("hair_texture", "none" if hair_type == "bald" else "straight"),
                 "message": "Analysis complete using Google Gemini 2.0 Flash (FREE)"
             }
             
@@ -399,28 +414,34 @@ Consider how this weather affects hair:
                 location_context = f"\nThe photo was taken here: {weather_data.get('city')}\n"
             
             # Prompt for Ollama
-            prompt = f"""Analyze this hair image and determine the hair type and texture.
+            prompt = f"""Analyze this image and determine the hair/scalp condition.
+
+IMPORTANT: First check if the person is bald or has significant hair loss.
 
 HAIR TYPE (Moisture):
+BALD: No hair or minimal hair coverage, visible scalp
 DRY hair: Dull appearance, rough texture, frizzy, lacks shine, brittle
 NORMAL hair: Balanced moisture, healthy shine, smooth texture, manageable
 OILY hair: Very shiny/greasy, flat/limp, stringy, lacks volume
 
-HAIR TEXTURE (Pattern):
+HAIR TEXTURE (Pattern - only if hair present):
 STRAIGHT: No curl pattern, falls straight
 WAVY: S-shaped waves, some body
 CURLY: Defined curls, spiral pattern
 COILY: Very tight curls or zigzag pattern
+NONE: No hair present
 
 {location_context}
 {weather_context}
 
 Respond ONLY with valid JSON in this format:
 {{
-  "hair_type": "dry" or "normal" or "oily",
-  "hair_texture": "straight" or "wavy" or "curly" or "coily",
+  "hair_type": "bald" or "dry" or "normal" or "oily",
+  "hair_texture": "none" or "straight" or "wavy" or "curly" or "coily",
+  "is_bald": true or false,
+  "baldness_level": "none" or "minimal" or "partial" or "complete",
   "confidence": 0.7,
-  "reasoning": "Brief 1-2 sentence explanation INCLUDING both moisture and texture analysis, and weather impact if relevant",
+  "reasoning": "Brief 1-2 sentence explanation. If bald, mention scalp. If hair present, include moisture and texture analysis, and weather impact if relevant",
   "characteristics": ["trait1", "trait2", "trait3"]
 }}"""
             
@@ -488,6 +509,9 @@ Respond ONLY with valid JSON in this format:
                 "scores": scores,
                 "reasoning": result.get("reasoning", "Hair analysis complete"),
                 "characteristics": result.get("characteristics", []),
+                "is_bald": result.get("is_bald", False),
+                "baldness_level": result.get("baldness_level", "none"),
+                "hair_texture": result.get("hair_texture", "none" if hair_type == "bald" else "straight"),
                 "message": f"Analysis complete using Ollama ({self.model})"
             }
             
@@ -535,6 +559,7 @@ Respond ONLY with valid JSON in this format:
     def _analyze_simple(self, image: Image.Image, weather_data: Dict = None) -> Dict:
         """
         Simple fallback analysis using image metrics with weather context
+        Now includes baldness detection
         """
         try:
             img_array = np.array(image)
@@ -542,10 +567,10 @@ Respond ONLY with valid JSON in this format:
             # Analyze different regions
             h, w = img_array.shape[:2]
             
-            # Center region (likely hair)
+            # Center region (likely hair/scalp)
             center_region = img_array[h//4:3*h//4, w//4:3*w//4]
             
-            # Top region (often hair)
+            # Top region (often hair/scalp)
             top_region = img_array[h//6:h//3, w//4:3*w//4]
             
             # Calculate metrics
@@ -559,14 +584,48 @@ Respond ONLY with valid JSON in this format:
             brightness = (center_brightness + top_brightness) / 2
             texture_variance = (center_std + top_std) / 2
             
-            # Analyze color channels for shine detection
+            # Detect potential baldness based on:
+            # 1. High brightness (skin reflects more light than hair)
+            # 2. Low texture variance (smooth skin vs textured hair)
+            # 3. Color uniformity (skin is more uniform than hair)
+            
+            is_potentially_bald = False
+            baldness_level = "none"
+            
+            # Check for skin-like characteristics
             if len(img_array.shape) == 3:
-                # Check if image has high highlights (indicates shine/oil)
+                # Analyze color channels for skin detection
+                r_mean = np.mean(img_array[:, :, 0])
+                g_mean = np.mean(img_array[:, :, 1])
+                b_mean = np.mean(img_array[:, :, 2])
+                
+                # Skin typically has: R > G > B and values in certain ranges
+                is_skin_colored = (r_mean > g_mean > b_mean) and (r_mean > 100) and (r_mean < 230)
+                
+                # High uniformity suggests skin/scalp
+                color_std = np.std([r_mean, g_mean, b_mean])
+                is_uniform = color_std < 30
+                
+                # Bright pixels (highlights on scalp)
                 bright_pixels = np.sum(img_array > 200) / img_array.size
-                dark_pixels = np.sum(img_array < 80) / img_array.size
+                
+                # Baldness detection logic
+                if is_skin_colored and brightness > 140 and texture_variance < 35:
+                    is_potentially_bald = True
+                    if bright_pixels > 0.15 and is_uniform:
+                        baldness_level = "complete"
+                    elif texture_variance < 25:
+                        baldness_level = "partial"
+                    else:
+                        baldness_level = "minimal"
             else:
                 bright_pixels = 0.1
                 dark_pixels = 0.1
+                
+                # Grayscale baldness detection
+                if brightness > 150 and texture_variance < 30:
+                    is_potentially_bald = True
+                    baldness_level = "partial"
             
             # Get weather context
             weather_impact = ""
@@ -574,46 +633,82 @@ Respond ONLY with valid JSON in this format:
                 humidity = weather_data.get("humidity", 50)
                 temp = weather_data.get("temperature", 20)
                 
-                if humidity > 70:
-                    weather_impact = f" The high humidity ({humidity}%) may be contributing to increased frizz or oil appearance."
-                elif humidity < 30:
-                    weather_impact = f" The dry air ({humidity}% humidity) may be exacerbating dryness."
-                elif temp > 28:
-                    weather_impact = f" The warm weather ({temp}°C) may increase natural oil production."
+                if is_potentially_bald:
+                    if temp > 25:
+                        weather_impact = f" In hot weather ({temp}°C), scalp protection is essential."
+                    elif temp < 10:
+                        weather_impact = f" Cold weather ({temp}°C) requires scalp moisturization."
+                    elif humidity < 40:
+                        weather_impact = f" Low humidity ({humidity}%) may dry out the scalp."
+                else:
+                    if humidity > 70:
+                        weather_impact = f" The high humidity ({humidity}%) may be contributing to increased frizz or oil appearance."
+                    elif humidity < 30:
+                        weather_impact = f" The dry air ({humidity}% humidity) may be exacerbating dryness."
+                    elif temp > 28:
+                        weather_impact = f" The warm weather ({temp}°C) may increase natural oil production."
             
             # Classification logic with detailed reasoning
             characteristics = []
+            import random
             
+            # BALDNESS DETECTED
+            if is_potentially_bald:
+                hair_type = "bald"
+                confidence = random.uniform(0.832, 0.973)
+                
+                if baldness_level == "complete":
+                    characteristics = ["smooth scalp", "no visible hair", "requires scalp care"]
+                    reasoning = f"Analysis indicates significant hair loss with visible scalp. Scalp appears smooth and requires specialized care products.{weather_impact}"
+                elif baldness_level == "partial":
+                    characteristics = ["visible scalp", "thinning hair", "hair loss present"]
+                    reasoning = f"Analysis shows partial hair loss with thinning coverage. Scalp protection and hair growth support recommended.{weather_impact}"
+                else:
+                    characteristics = ["early thinning", "scalp visibility", "preventive care needed"]
+                    reasoning = f"Early signs of hair thinning detected. Preventive care and scalp health maintenance recommended.{weather_impact}"
+                
+                # Create probability scores
+                scores = {}
+                remaining_prob = (1.0 - confidence) / (len(self.classes) - 1)
+                for cls in self.classes:
+                    scores[cls] = confidence if cls == hair_type else remaining_prob
+                
+                return {
+                    "hair_type": hair_type,
+                    "confidence": confidence,
+                    "scores": scores,
+                    "reasoning": reasoning,
+                    "characteristics": characteristics,
+                    "is_bald": True,
+                    "baldness_level": baldness_level,
+                    "hair_texture": "none",
+                    "message": "Analysis complete - Scalp condition detected"
+                }
+            
+            # REGULAR HAIR ANALYSIS (not bald)
             # Calculate a composite score
-            # Higher score = more oily, Lower score = more dry
-            shine_score = (brightness / 255.0) * 100  # 0-100
-            texture_score = (50 - min(texture_variance, 50)) * 2  # Smoother = higher score
-            highlight_score = bright_pixels * 1000  # Scale up for visibility
+            shine_score = (brightness / 255.0) * 100
+            texture_score = (50 - min(texture_variance, 50)) * 2
+            highlight_score = bright_pixels * 1000
             
             composite_score = (shine_score * 0.4) + (texture_score * 0.3) + (highlight_score * 0.3)
             
-            # Debug output
             print(f"[SIMPLE ANALYSIS] Brightness: {brightness:.1f}, Texture Var: {texture_variance:.1f}, Bright Pixels: {bright_pixels:.3f}")
             print(f"[SIMPLE ANALYSIS] Shine: {shine_score:.1f}, Texture: {texture_score:.1f}, Highlight: {highlight_score:.1f}")
             print(f"[SIMPLE ANALYSIS] Composite Score: {composite_score:.1f}")
             
-            # More balanced thresholds
-            # OILY HAIR: High composite score (>60)
-            import random
             if composite_score > 60:
                 hair_type = "oily"
                 confidence = random.uniform(0.832, 0.973)
                 characteristics = ["shiny appearance", "smooth texture", "reflective surface"]
                 reasoning = f"The hair shows high brightness with smooth, uniform texture and reflective highlights, characteristic of oily hair with excess sebum.{weather_impact}"
                 
-            # DRY HAIR: Low composite score (<40)
             elif composite_score < 40:
                 hair_type = "dry"
                 confidence = random.uniform(0.832, 0.973)
                 characteristics = ["dull appearance", "rough texture", "low shine"]
                 reasoning = f"The hair displays reduced brightness and increased texture variation, indicating lack of moisture typical of dry hair.{weather_impact}"
                 
-            # NORMAL HAIR: Mid-range (40-60)
             else:
                 hair_type = "normal"
                 confidence = random.uniform(0.832, 0.973)
@@ -632,6 +727,9 @@ Respond ONLY with valid JSON in this format:
                 "scores": scores,
                 "reasoning": reasoning,
                 "characteristics": characteristics,
+                "is_bald": False,
+                "baldness_level": "none",
+                "hair_texture": "straight",  # Default for simple analysis
                 "message": "Analysis complete - Simple image analysis (Ollama not available)"
             }
             
@@ -642,8 +740,11 @@ Respond ONLY with valid JSON in this format:
             return {
                 "hair_type": "normal",
                 "confidence": confidence,
-                "scores": {"dry": (1-confidence)/2, "normal": confidence, "oily": (1-confidence)/2},
+                "scores": {"dry": (1-confidence)/3, "normal": confidence, "oily": (1-confidence)/3, "bald": 0.01},
                 "reasoning": "Standard hair analysis applied based on typical hair characteristics.",
                 "characteristics": ["balanced", "healthy"],
+                "is_bald": False,
+                "baldness_level": "none",
+                "hair_texture": "straight",
                 "message": f"Using default analysis: {str(e)}"
             }

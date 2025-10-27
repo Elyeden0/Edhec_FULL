@@ -87,6 +87,47 @@ PRODUCTS = [
         suitable_for=["dry", "normal"],
         weather_boost=["dry", "cold", "windy"]
     ),
+    # For bald/scalp care
+    Product(
+        id=8,
+        name="K18 Scalp Shield Protective Serum",
+        price="$58.00",
+        size="50ml",
+        description="Advanced peptide serum for scalp health and protection. Nourishes scalp, supports hair follicles, and provides UV protection.",
+        image_url="/products/k18-scalp-serum.jpg",
+        suitable_for=["bald"],
+        weather_boost=["hot", "dry", "cold"]
+    ),
+    Product(
+        id=9,
+        name="K18 Hair Growth Support Treatment",
+        price="$85.00",
+        size="60ml",
+        description="Molecular treatment designed to support hair growth and strengthen existing hair. Ideal for thinning hair and early hair loss.",
+        image_url="/products/k18-growth.jpg",
+        suitable_for=["bald"],
+        weather_boost=["dry", "cold"]
+    ),
+    Product(
+        id=10,
+        name="K18 Gentle Scalp Cleansing Foam",
+        price="$35.00",
+        size="200ml",
+        description="Ultra-gentle foam cleanser for scalp without hair. Maintains scalp pH balance and hydration.",
+        image_url="/products/k18-scalp-cleanser.jpg",
+        suitable_for=["bald"],
+        weather_boost=["humid", "hot"]
+    ),
+    Product(
+        id=11,
+        name="K18 Scalp Hydration Complex",
+        price="$48.00",
+        size="100ml",
+        description="Intensive hydrating treatment for dry scalp. Provides long-lasting moisture and soothes irritation.",
+        image_url="/products/k18-scalp-hydration.jpg",
+        suitable_for=["bald"],
+        weather_boost=["dry", "cold", "windy"]
+    ),
 ]
 
 class ProductRecommender:
@@ -187,7 +228,9 @@ class ProductRecommender:
         
         # Hair type reasoning
         if hair_type in product.suitable_for:
-            if hair_type == "dry":
+            if hair_type == "bald":
+                reasons.append(f"Specially formulated for scalp care and health - perfect for bald or thinning hair")
+            elif hair_type == "dry":
                 reasons.append(f"Ideal for your dry hair - provides deep hydration and repair")
             elif hair_type == "oily":
                 reasons.append(f"Perfect for oily hair - balances without adding excess oil")
@@ -199,12 +242,21 @@ class ProductRecommender:
         if "humid" in weather_matches:
             reasons.append("Helps combat frizz in humid conditions")
         if "dry" in weather_matches:
-            reasons.append("Protects against dry climate damage")
+            if hair_type == "bald":
+                reasons.append("Protects and moisturizes scalp in dry climate")
+            else:
+                reasons.append("Protects against dry climate damage")
         if "cold" in weather_matches:
-            reasons.append("Shields hair from cold weather stress")
+            if hair_type == "bald":
+                reasons.append("Essential scalp protection from cold weather")
+            else:
+                reasons.append("Shields hair from cold weather stress")
         if "hot" in weather_matches:
-            reasons.append("Keeps hair fresh in hot weather")
+            if hair_type == "bald":
+                reasons.append("Provides UV protection for exposed scalp")
+            else:
+                reasons.append("Keeps hair fresh in hot weather")
         if "rainy" in weather_matches:
             reasons.append("Weather-proof protection for rainy days")
         
-        return " • ".join(reasons) if reasons else "Recommended for overall hair health"
+        return " • ".join(reasons) if reasons else "Recommended for overall scalp and hair health"
