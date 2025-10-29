@@ -407,7 +407,7 @@ const Step2Photo = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
                   <strong>📷 Camera Option:</strong> If your device has a camera, click "Take Photo" below and allow access when prompted.
                   <br />
-                  <strong>� No Camera?</strong> No problem! Use "Upload Photo" to select an image from your device.
+                  <strong>📁 No Camera?</strong> No problem! Use "Upload Photo" to select an image from your device.
                 </div>
                 <Button
                   onClick={startCamera}
