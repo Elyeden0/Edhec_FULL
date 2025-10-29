@@ -81,7 +81,7 @@ const Welcome = () => {
           <span className="font-semibold text-green-600">GDPR Compliant</span>
           {" "}• Your data is protected • 
           <a 
-            href="/rgpd-policy" 
+            href="/gdpr-policy" 
             className="text-purple-600 hover:underline ml-1"
             target="_blank"
             rel="noopener noreferrer"

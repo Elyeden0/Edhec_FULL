@@ -81,7 +81,7 @@ npm run dev
 - **Frontend**: http://localhost:8080
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
-- **GDPR Policy**: http://localhost:8080/rgpd-policy
+-- **GDPR Policy**: http://localhost:8080/gdpr-policy
 
 ## 📁 Project Structure
 
@@ -101,7 +101,7 @@ K18/
 │   │   ├── Step2Photo.tsx        # Photo capture/upload
 │   │   ├── Results.tsx           # Analysis results
 │   │   ├── Products.tsx          # Product recommendations
-│   │   └── RgpdPolicy.tsx        # Privacy policy
+│   │   └── GdprPolicy.tsx        # Privacy policy
 │   └── components/ui/            # shadcn/ui components
 ├── start.sh                      # Start services script
 ├── stop.sh                       # Stop services script
@@ -194,8 +194,8 @@ Update pages in `src/pages/` directory.
 - All photos stored temporarily in browser session storage
 - Location data stored locally in browser
 - No server-side permanent storage
-- Full GDPR compliance
-- Privacy policy: http://localhost:8080/rgpd-policy
+-- Full GDPR compliance
+-- Privacy policy: http://localhost:8080/gdpr-policy
 
 ## 🚀 Development Notes
 

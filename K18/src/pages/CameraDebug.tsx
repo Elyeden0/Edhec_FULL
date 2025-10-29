@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
 const CameraDebug = () => {
-  const [status, setStatus] = useState<string>("Prêt à tester");
+  const [status, setStatus] = useState<string>("Ready to test");
   const [cameraActive, setCameraActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -19,51 +19,51 @@ const CameraDebug = () => {
     setLogs([]);
     setLoading(true);
     
-    addLog("🔍 Vérification de la disponibilité de l'API...");
+  addLog("🔍 Checking MediaDevices API availability...");
     
     if (!navigator.mediaDevices) {
-      setStatus("❌ API MediaDevices non disponible");
-      addLog("❌ navigator.mediaDevices n'existe pas");
+      setStatus("❌ MediaDevices API not available");
+      addLog("❌ navigator.mediaDevices is missing");
       setLoading(false);
       return;
     }
     
-    addLog("✅ API MediaDevices disponible");
+  addLog("✅ MediaDevices API available");
     
     if (!navigator.mediaDevices.getUserMedia) {
-      setStatus("❌ getUserMedia non supporté");
-      addLog("❌ navigator.mediaDevices.getUserMedia n'existe pas");
+      setStatus("❌ getUserMedia not supported");
+      addLog("❌ navigator.mediaDevices.getUserMedia is missing");
       setLoading(false);
       return;
     }
     
-    addLog("✅ getUserMedia disponible");
-    addLog("🔍 Énumération des appareils...");
+  addLog("✅ getUserMedia available");
+  addLog("🔍 Enumerating devices...");
     
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      addLog(`📹 Total appareils: ${devices.length}`);
+  addLog(`📹 Total devices: ${devices.length}`);
       
       const videoDevices = devices.filter(d => d.kind === 'videoinput');
-      addLog(`📹 Caméras vidéo: ${videoDevices.length}`);
+  addLog(`📹 Video cameras: ${videoDevices.length}`);
       
       if (videoDevices.length === 0) {
-        setStatus("❌ Aucune caméra détectée");
-        addLog("❌ Aucun appareil videoinput trouvé");
+        setStatus("❌ No camera detected");
+        addLog("❌ No videoinput devices found");
         setLoading(false);
         return;
       }
       
       videoDevices.forEach((device, i) => {
-        addLog(`  Caméra ${i + 1}: ${device.label || 'Sans nom'}`);
+        addLog(`  Camera ${i + 1}: ${device.label || 'Unnamed'}`);
         addLog(`    ID: ${device.deviceId.substring(0, 20)}...`);
       });
       
-      setStatus(`✅ ${videoDevices.length} caméra(s) détectée(s)`);
+      setStatus(`✅ ${videoDevices.length} camera(s) detected`);
       
     } catch (error: any) {
-      setStatus("⚠️ Erreur d'énumération");
-      addLog(`❌ Erreur: ${error.message}`);
+      setStatus("⚠️ Enumeration error");
+      addLog(`❌ Error: ${error.message}`);
     }
     
     setLoading(false);
@@ -73,67 +73,67 @@ const CameraDebug = () => {
     setLogs([]);
     setLoading(true);
     
-    addLog("🎥 Demande d'accès à la caméra...");
+  addLog("🎥 Requesting camera access...");
     
     try {
       const constraints = { video: true };
-      addLog(`📋 Contraintes: ${JSON.stringify(constraints)}`);
+  addLog(`📋 Constraints: ${JSON.stringify(constraints)}`);
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      addLog("✅ Stream obtenu!");
+  addLog("✅ Stream obtained!");
       
       const tracks = stream.getVideoTracks();
-      addLog(`📹 Pistes vidéo: ${tracks.length}`);
+  addLog(`📹 Video tracks: ${tracks.length}`);
       
       tracks.forEach((track, i) => {
-        addLog(`  Piste ${i + 1}: ${track.label}`);
-        addLog(`    État: ${track.readyState}`);
-        addLog(`    Activée: ${track.enabled}`);
+  addLog(`  Track ${i + 1}: ${track.label}`);
+  addLog(`    State: ${track.readyState}`);
+  addLog(`    Enabled: ${track.enabled}`);
         
         const settings = track.getSettings();
-        addLog(`    Résolution: ${settings.width}x${settings.height}`);
+        addLog(`    Resolution: ${settings.width}x${settings.height}`);
         addLog(`    FrameRate: ${settings.frameRate}`);
       });
       
       if (videoRef.current) {
-        addLog("📺 Attachement au élément vidéo...");
+  addLog("📺 Attaching to video element...");
         videoRef.current.srcObject = stream;
         videoRef.current.muted = true;
         
         try {
           await videoRef.current.play();
-          addLog("✅ Vidéo en lecture!");
+          addLog("✅ Video playing!");
           setCameraActive(true);
-          setStatus("✅ Caméra fonctionne!");
+          setStatus("✅ Camera is working!");
         } catch (playError: any) {
-          addLog(`❌ Erreur de lecture: ${playError.message}`);
-          setStatus(`❌ Erreur lecture: ${playError.message}`);
+          addLog(`❌ Play error: ${playError.message}`);
+          setStatus(`❌ Play error: ${playError.message}`);
         }
       }
       
     } catch (error: any) {
-      addLog(`❌ ERREUR: ${error.name}`);
+      addLog(`❌ ERROR: ${error.name}`);
       addLog(`   Message: ${error.message}`);
       setStatus(`❌ ${error.name}: ${error.message}`);
-      
+
       let solution = "";
       switch(error.name) {
         case 'NotAllowedError':
-          solution = "Vous avez refusé l'accès. Cliquez sur l'icône de caméra dans la barre d'adresse pour autoriser.";
+          solution = "Access was denied. Click the camera icon in the address bar to allow access.";
           break;
         case 'NotFoundError':
-          solution = "Aucune caméra trouvée. Vérifiez qu'une caméra est connectée.";
+          solution = "No camera found. Please ensure a camera is connected.";
           break;
         case 'NotReadableError':
-          solution = "Caméra déjà utilisée par une autre application.";
+          solution = "Camera is already in use by another application.";
           break;
         case 'SecurityError':
-          solution = "Erreur de sécurité. Utilisez HTTPS ou localhost.";
+          solution = "Security error. Use HTTPS or localhost.";
           break;
       }
-      
+
       if (solution) {
-        addLog(`💡 Solution: ${solution}`);
+        addLog(`💡 Tip: ${solution}`);
       }
     }
     
@@ -144,13 +144,13 @@ const CameraDebug = () => {
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => {
-        addLog(`🛑 Arrêt de: ${track.label}`);
+  addLog(`🛑 Stopping: ${track.label}`);
         track.stop();
       });
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
-    setStatus("Caméra arrêtée");
+    setStatus("Camera stopped");
   };
 
   return (
@@ -158,7 +158,7 @@ const CameraDebug = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">🔧 Diagnostic de Caméra</CardTitle>
+            <CardTitle className="text-2xl">🔧 Camera Diagnostics</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Status */}
@@ -174,17 +174,17 @@ const CameraDebug = () => {
             <div className="flex gap-2 flex-wrap">
               <Button onClick={checkCamera} disabled={loading} variant="outline">
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AlertCircle className="mr-2 h-4 w-4" />}
-                Vérifier Disponibilité
+                Check Availability
               </Button>
               
               <Button onClick={testCamera} disabled={loading || cameraActive}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                Tester Caméra
+                Test Camera
               </Button>
               
               {cameraActive && (
                 <Button onClick={stopCamera} variant="destructive">
-                  Arrêter
+                  Stop
                 </Button>
               )}
             </div>
@@ -215,7 +215,7 @@ const CameraDebug = () => {
             <Card className="bg-gray-50">
               <CardContent className="pt-4">
                 <p className="text-xs text-muted-foreground">
-                  <strong>Navigateur:</strong> {navigator.userAgent}<br />
+                  <strong>Browser:</strong> {navigator.userAgent}<br />
                   <strong>URL:</strong> {window.location.href}<br />
                   <strong>Protocol:</strong> {window.location.protocol}
                 </p>
@@ -230,11 +230,11 @@ const CameraDebug = () => {
             <CardTitle>📝 Instructions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p><strong>1.</strong> Cliquez sur "Vérifier Disponibilité" pour voir si des caméras sont détectées</p>
-            <p><strong>2.</strong> Si des caméras sont trouvées, cliquez sur "Tester Caméra"</p>
-            <p><strong>3.</strong> Autorisez l'accès quand votre navigateur vous le demande</p>
-            <p><strong>4.</strong> La vidéo devrait s'afficher</p>
-            <p className="text-muted-foreground pt-2">💡 Consultez les logs en bas pour voir les détails techniques</p>
+                <p><strong>1.</strong> Click "Check Availability" to see if any cameras are detected</p>
+            <p><strong>2.</strong> If cameras are found, click "Test Camera"</p>
+            <p><strong>3.</strong> Allow access when your browser prompts you</p>
+            <p><strong>4.</strong> The video should appear</p>
+            <p className="text-muted-foreground pt-2">💡 Check the logs below for technical details</p>
           </CardContent>
         </Card>
       </div>

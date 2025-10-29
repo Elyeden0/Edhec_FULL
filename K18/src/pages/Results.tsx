@@ -299,9 +299,9 @@ const Results = () => {
             </Button>
             <Button
               onClick={() => {
-                // Store analysis results for the products page
-                sessionStorage.setItem('analysisResult', JSON.stringify(analysisResult));
-                navigate("/products");
+                // Store analysis results and go to reminder page before showing products
+                  sessionStorage.setItem('analysisResult', JSON.stringify(analysisResult));
+                  navigate("/products/reminder");
               }}
               size="lg"
               className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"

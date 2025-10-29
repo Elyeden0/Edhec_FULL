@@ -16,6 +16,7 @@ const Step2Location = () => {
   const [manualCity, setManualCity] = useState("");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [locationMethod, setLocationMethod] = useState<"auto" | "manual" | null>(null);
+  const [permissionState, setPermissionState] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if location already exists
@@ -27,6 +28,24 @@ const Step2Location = () => {
         setLocationMethod("auto");
       }
     }
+
+    // Try to read permission state on mount
+    (async () => {
+      try {
+        if ((navigator as any).permissions && (navigator as any).permissions.query) {
+          const p = await (navigator as any).permissions.query({ name: 'geolocation' });
+          setPermissionState(p.state);
+          // Listen for changes
+          try {
+            p.onchange = () => setPermissionState(p.state);
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, []);
 
   const getCityName = async (latitude: number, longitude: number) => {
@@ -81,7 +100,8 @@ const Step2Location = () => {
     }
   };
 
-  const requestAutoLocation = () => {
+  const requestAutoLocation = async () => {
+    console.info('[GEO] requestAutoLocation called');
     if (!navigator.geolocation) {
       toast({
         title: "Not Supported",
@@ -91,31 +111,65 @@ const Step2Location = () => {
       return;
     }
 
+    // Check permission state if available to provide immediate feedback
+    try {
+      if ((navigator as any).permissions && (navigator as any).permissions.query) {
+        try {
+          const perm = await (navigator as any).permissions.query({ name: 'geolocation' });
+          setPermissionState(perm.state);
+          if (perm.state === 'denied') {
+            toast({
+              title: 'Location Disabled',
+              description: 'Location permission is denied in your browser. Please enable it or enter your city manually.',
+              variant: 'destructive'
+            });
+            return;
+          }
+        } catch (e) {
+          // ignore permission check failure and continue to request location
+          console.warn('[GEO] permissions.query failed', e);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     setIsLoadingLocation(true);
     setLocationMethod("auto");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        console.info('[GEO] getCurrentPosition.success', position.coords);
         try {
           const city = await getCityName(position.coords.latitude, position.coords.longitude);
+
+          // Always save coordinates so weather lookup can work even if reverse geocoding fails
+          const locationData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            city: city || "Unknown location",
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('userLocation', JSON.stringify(locationData));
+          setCityName(locationData.city);
+
           if (city) {
-            const locationData = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              city: city,
-              timestamp: new Date().toISOString()
-            };
-            localStorage.setItem('userLocation', JSON.stringify(locationData));
-            setCityName(city);
             toast({
               title: "Location Found!",
               description: `Set to ${city}`,
             });
+          } else {
+            // Provide clear guidance when reverse geocoding failed (CORS or provider issue)
+            toast({
+              title: "Location Saved",
+              description: "Coordinates saved but we couldn't resolve a city name. You can enter your city manually for a nicer display.",
+            });
           }
         } catch (error) {
+          console.error("Auto location error:", error);
           toast({
             title: "Error",
-            description: "Could not determine your city. Please enter it manually.",
+            description: "Could not determine your city. Coordinates were saved — please enter your city manually if you want a name.",
             variant: "destructive"
           });
         } finally {
@@ -123,6 +177,7 @@ const Step2Location = () => {
         }
       },
       (error) => {
+        console.error('[GEO] getCurrentPosition.error', error);
         setIsLoadingLocation(false);
         let errorMessage = "Location access denied.";
         if (error.code === 1) {
@@ -132,7 +187,7 @@ const Step2Location = () => {
         } else if (error.code === 3) {
           errorMessage = "Location request timed out.";
         }
-        
+
         toast({
           title: "Location Error",
           description: errorMessage + " You can enter your city manually below.",
@@ -144,6 +199,31 @@ const Step2Location = () => {
         timeout: 15000,
         maximumAge: 300000
       }
+    );
+  };
+
+  // Force-get position helper (diagnostic): logs raw result and saves coords
+  const forceGetPosition = () => {
+    console.info('[GEO] forceGetPosition called');
+    if (!navigator.geolocation) {
+      console.warn('[GEO] geolocation not supported');
+      toast({ title: 'Not supported', description: 'Geolocation is not supported in this browser.', variant: 'destructive' });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        console.info('[GEO] forceGetPosition.success', pos.coords);
+        const locationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, city: 'Unknown (force)', timestamp: new Date().toISOString() };
+        localStorage.setItem('userLocation', JSON.stringify(locationData));
+        setCityName(locationData.city);
+        toast({ title: 'Coordinates Saved', description: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` });
+      },
+      (err) => {
+        console.error('[GEO] forceGetPosition.error', err);
+        toast({ title: 'Error', description: `Geolocation error: ${err.code} ${err.message}`, variant: 'destructive' });
+      },
+      { timeout: 15000 }
     );
   };
 
@@ -204,6 +284,34 @@ const Step2Location = () => {
       description: "You'll get general recommendations without weather context.",
     });
     navigate("/results");
+  };
+
+  // Diagnostic helper for browsers (helps debug Firefox/permission issues)
+  const checkGeolocationSupport = async () => {
+    try {
+      const supports = !!navigator.geolocation;
+      let permState: string | null = null;
+      try {
+        if ((navigator as any).permissions && (navigator as any).permissions.query) {
+          const p = await (navigator as any).permissions.query({ name: 'geolocation' });
+          permState = p.state;
+        }
+      } catch (e) {
+        // permission API not available or failed
+        permState = null;
+      }
+
+      const stored = localStorage.getItem('userLocation');
+      console.info('[GEO DEBUG] supportsGeolocation=', supports, 'permissionState=', permState, 'stored=', stored);
+
+      toast({
+        title: 'Geolocation Debug',
+        description: `Supported: ${supports}. Permission: ${permState ?? 'unknown'}. Stored: ${stored ? 'yes' : 'no'}`,
+      });
+    } catch (e) {
+      console.error('Geolocation debug error', e);
+      toast({ title: 'Debug Error', description: 'Could not run geolocation debug. See console for details.', variant: 'destructive' });
+    }
   };
 
   return (
@@ -352,6 +460,21 @@ const Step2Location = () => {
               By knowing your location, we can provide recommendations that work with your local climate, 
               not against it.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Diagnostics / Debug (helps with Firefox issues) */}
+        <Card className="mt-4 border-dashed">
+          <CardHeader>
+            <CardTitle className="text-sm">Diagnostics</CardTitle>
+            <CardDescription className="text-xs">Quick checks to help debug geolocation/permission issues (useful for Firefox).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={checkGeolocationSupport}>Check Geolocation</Button>
+              <Button variant="ghost" onClick={() => { console.info('Stored location:', localStorage.getItem('userLocation')); toast({ title: 'Stored Location', description: localStorage.getItem('userLocation') ? 'Stored in localStorage' : 'Not stored' }); }}>Show Stored</Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">If you are using Firefox: ensure the page is served from <code>localhost</code> (not <code>file://</code>) and check site permissions in the address bar.</p>
           </CardContent>
         </Card>
 

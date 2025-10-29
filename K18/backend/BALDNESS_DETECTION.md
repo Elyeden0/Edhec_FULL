@@ -1,87 +1,87 @@
-# 🦲 Détection de Calvitie - Documentation
+# 🦲 Baldness Detection - Documentation
 
-## 📋 Résumé des Modifications
+## 📋 Summary of Changes
 
-Le système K18 peut maintenant détecter les personnes chauves et recommander des produits adaptés pour le soin du cuir chevelu.
-
----
-
-## ✨ Nouvelles Fonctionnalités
-
-### 1. **Détection de Calvitie**
-- ✅ Détection automatique des scalps chauves ou dégarnis
-- ✅ Classification en 4 niveaux : `none`, `minimal`, `partial`, `complete`
-- ✅ Analyse basée sur :
-  - Luminosité élevée (peau réfléchit plus que cheveux)
-  - Faible variance de texture (peau lisse vs cheveux texturés)
-  - Couleurs caractéristiques de la peau (R > G > B)
-
-### 2. **Nouveaux Produits pour Cuir Chevelu**
-
-4 nouveaux produits K18 ont été ajoutés :
-
-| Produit | Prix | Description |
-|---------|------|-------------|
-| **K18 Scalp Shield Protective Serum** | $58.00 | Sérum peptidique pour santé du cuir chevelu + protection UV |
-| **K18 Hair Growth Support Treatment** | $85.00 | Traitement moléculaire pour soutenir la croissance capillaire |
-| **K18 Gentle Scalp Cleansing Foam** | $35.00 | Nettoyant doux pour cuir chevelu sans cheveux |
-| **K18 Scalp Hydration Complex** | $48.00 | Traitement hydratant intensif pour cuir chevelu sec |
-
-### 3. **Recommandations Adaptées**
-- Recommandations spécifiques selon le niveau de calvitie
-- Prise en compte des conditions météo (chaleur = protection UV, froid = hydratation, etc.)
-- Messages personnalisés et empathiques
+The K18 system can now detect bald or thinning scalps and recommend targeted products for scalp care.
 
 ---
 
-## 🔧 Modifications Techniques
+## ✨ New Features
 
-### **Fichier : `hair_analyzer.py`**
+### 1. Baldness Detection
+- ✅ Automatic detection of bald or thinning scalps
+- ✅ Classification into 4 levels: `none`, `minimal`, `partial`, `complete`
+- ✅ Analysis based on:
+  - High brightness (skin reflects more than hair)
+  - Low texture variance (smooth scalp vs textured hair)
+  - Skin color cues (R > G > B)
 
-#### Classes de cheveux mises à jour :
+### 2. New Scalp Products
+
+4 new K18 products were added:
+
+| Product | Price | Description |
+|---------|------:|-------------|
+| **K18 Scalp Shield Protective Serum** | $58.00 | Peptide serum for scalp health + UV protection |
+| **K18 Hair Growth Support Treatment** | $85.00 | Molecular treatment to support hair regrowth |
+| **K18 Gentle Scalp Cleansing Foam** | $35.00 | Gentle cleanser for scalp without hair |
+| **K18 Scalp Hydration Complex** | $48.00 | Intensive hydration treatment for dry scalps |
+
+### 3. Tailored Recommendations
+- Recommendations adapted to baldness level
+- Weather-aware suggestions (UV protection for heat, hydration for cold, etc.)
+- Personalized, empathetic messaging
+
+---
+
+## 🔧 Technical Changes
+
+### File: `hair_analyzer.py`
+
+#### Updated hair classes:
 ```python
-self.classes = ["dry", "normal", "oily", "bald"]  # Ajout de "bald"
+self.classes = ["dry", "normal", "oily", "bald"]  # added "bald"
 ```
 
-#### Validation d'image améliorée :
-- Accepte maintenant les images de scalps chauves
-- Détecte si l'image montre de la calvitie ou amincissement
-- Retourne `is_bald_or_thinning` dans la validation
+#### Improved image validation:
+- Now accepts images showing bald scalps
+- Detects baldness or thinning
+- Returns `is_bald_or_thinning` in validation
 
-#### Analyse Gemini enrichie :
-- Nouveau prompt incluant la détection de calvitie
-- Retourne `is_bald`, `baldness_level`, `hair_texture`
-- Raisonnement adapté selon présence ou absence de cheveux
+#### Gemini analysis enhancements:
+- New prompt includes baldness detection
+- Returns `is_bald`, `baldness_level`, `hair_texture`
+- Reasoning adapted for presence or absence of hair
 
-#### Analyse simple améliorée :
+#### Simple analysis improvements:
 ```python
-# Détection basée sur :
-- Couleur peau : R > G > B, valeurs entre 100-230
-- Luminosité élevée : > 140
-- Faible variance texture : < 35
-- Uniformité des couleurs
+# Detection heuristics:
+- Skin color: R > G > B, values roughly between 100-230
+- High brightness: > 140
+- Low texture variance: < 35
+- Color uniformity
 ```
 
-### **Fichier : `product_recommender.py`**
+### File: `product_recommender.py`
 
-#### Nouveaux produits (IDs 8-11) :
-- Adaptés spécifiquement pour cuir chevelu chauve
+#### New products (IDs 8-11):
+- Specifically targeted for bald scalps
 - `suitable_for=["bald"]`
-- `weather_boost` selon conditions (protection UV, hydratation, etc.)
+- `weather_boost` flags based on conditions (UV protection, hydration, etc.)
 
-#### Logique de recommandation mise à jour :
-- Génère des messages personnalisés pour calvitie
-- Recommandations météo adaptées (UV pour chaleur, hydratation pour froid)
+#### Recommendation logic updates:
+- Generates personalized messages for baldness
+- Weather-adjusted recommendations (UV for heat, hydration for cold)
 
 ---
 
 ## 🧪 Tests
 
-### Test automatique créé : `test_bald_detection.py`
+### New automated test: `test_bald_detection.py`
 
-**Résultats des tests :**
+**Test results:**
 
-#### ✅ Test 1 : Image de cuir chevelu chauve
+#### ✅ Test 1: Bald scalp image
 ```
 ✓ Hair Type: bald
 ✓ Is Bald: True
@@ -90,12 +90,12 @@ self.classes = ["dry", "normal", "oily", "bald"]  # Ajout de "bald"
 ✓ Characteristics: smooth scalp, no visible hair, requires scalp care
 ```
 
-**Recommandations :**
+**Recommendations:**
 1. K18 Scalp Shield Protective Serum (88.4%)
 2. K18 Hair Growth Support Treatment (77.7%)
 3. K18 Scalp Hydration Complex (63.7%)
 
-#### ✅ Test 2 : Image de cheveux normaux
+#### ✅ Test 2: Normal hair image
 ```
 ✓ Hair Type: dry
 ✓ Is Bald: False
@@ -103,16 +103,16 @@ self.classes = ["dry", "normal", "oily", "bald"]  # Ajout de "bald"
 ✓ Confidence: 87.5%
 ```
 
-**Recommandations :**
+**Recommendations:**
 1. K18 Leave-In Molecular Repair Hair Mask (86.9%)
 2. K18 Damage Shield pH Protective Conditioner (77.4%)
 3. K18 Oil Leave-In (65.5%)
 
 ---
 
-## 📊 Réponse API Étendue
+## 📊 Extended API Response
 
-### Nouveau format de réponse :
+### New response format:
 
 ```json
 {
@@ -135,25 +135,25 @@ self.classes = ["dry", "normal", "oily", "bald"]  # Ajout de "bald"
 
 ---
 
-## 🎯 Impact Utilisateur
+## 🎯 User Impact
 
-### Avant :
-- ❌ Personnes chauves ne recevaient pas de recommandations pertinentes
-- ❌ Système non adapté pour soin du cuir chevelu
-- ❌ Risque d'expérience utilisateur frustrante
+### Before:
+- ❌ Bald users received irrelevant recommendations
+- ❌ System not adapted for scalp care
+- ❌ Risk of a poor user experience
 
-### Après :
-- ✅ Détection automatique et bienveillante
-- ✅ 4 produits spécialisés pour cuir chevelu
-- ✅ Recommandations personnalisées selon météo
-- ✅ Messages empathiques et professionnels
-- ✅ Expérience inclusive pour tous les utilisateurs
+### After:
+- ✅ Automatic, compassionate detection
+- ✅ 4 specialized scalp care products
+- ✅ Weather-aware personalized recommendations
+- ✅ Empathetic, professional messaging
+- ✅ Inclusive experience for all users
 
 ---
 
-## 🚀 Utilisation
+## 🚀 Usage
 
-### Code exemple :
+### Example code:
 ```python
 from hair_analyzer import HairAnalyzer
 from product_recommender import ProductRecommender
@@ -161,14 +161,14 @@ from product_recommender import ProductRecommender
 analyzer = HairAnalyzer()
 recommender = ProductRecommender()
 
-# Analyser une image
+# Analyze an image
 result = analyzer.analyze_hair(image, weather_data)
 
-# Vérifier si chauve
+# Check for baldness
 if result.get('is_bald'):
-    print(f"Calvitie détectée : {result['baldness_level']}")
+    print(f"Baldness detected: {result['baldness_level']}")
 
-# Obtenir recommandations
+# Get recommendations
 products = recommender.recommend(
     result['hair_type'], 
     weather_data, 
@@ -178,23 +178,23 @@ products = recommender.recommend(
 
 ---
 
-## 📝 Notes Importantes
+## 📝 Important Notes
 
-1. **Sensibilité** : Le système est conçu pour être respectueux et professionnel
-2. **Précision** : Utilise Gemini 2.0 Flash pour la meilleure détection
-3. **Fallback** : Analyse simple disponible si Gemini/Ollama indisponibles
-4. **Météo** : Recommandations adaptées (UV, froid, humidité, etc.)
-
----
-
-## 🔄 Prochaines Améliorations Possibles
-
-- [ ] Ajouter détection de zones spécifiques (tempes, couronne, etc.)
-- [ ] Intégrer suivi temporel de la progression
-- [ ] Ajouter quiz pour causes potentielles (stress, génétique, etc.)
-- [ ] Recommandations lifestyle (alimentation, compléments)
-- [ ] Partenariat avec dermatologues
+1. **Sensitivity**: The system is designed to be respectful and professional
+2. **Accuracy**: Uses Gemini 2.0 Flash for the best detection
+3. **Fallback**: Simple analysis available if Gemini/Ollama are unavailable
+4. **Weather**: Recommendations adapt to UV, cold, humidity, etc.
 
 ---
 
-**Développé avec ❤️ pour l'inclusivité et le soin personnalisé**
+## 🔄 Possible Next Improvements
+
+- [ ] Add detection of specific scalp zones (temples, crown, etc.)
+- [ ] Integrate temporal tracking of progress
+- [ ] Add a questionnaire for potential causes (stress, genetics, etc.)
+- [ ] Lifestyle recommendations (diet, supplements)
+- [ ] Partner with dermatologists
+
+---
+
+**Built with ❤️ for inclusivity and personalized care**

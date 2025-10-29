@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test de Caméra - K18</title>
+    <title>Camera checkup - K18</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -80,19 +80,19 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎥 Test de Caméra - K18</h1>
+    <h1>🎥 Camera Checkup - K18</h1>
         
         <div id="browserInfo" class="status info">
-            <strong>Navigateur:</strong> <span id="browser"></span><br>
+            <strong>Browser:</strong> <span id="browser"></span><br>
             <strong>URL:</strong> <span id="url"></span><br>
             <strong>Protocol:</strong> <span id="protocol"></span>
         </div>
 
         <div id="status"></div>
 
-        <button id="testBtn" onclick="testCamera()">Tester la Caméra</button>
-        <button id="stopBtn" onclick="stopCamera()" class="hidden">Arrêter</button>
-        <button onclick="checkPermissions()">Vérifier Permissions</button>
+    <button id="testBtn" onclick="testCamera()">Test Camera</button>
+    <button id="stopBtn" onclick="stopCamera()" class="hidden">Stop</button>
+    <button onclick="checkPermissions()">Check Permissions</button>
 
         <video id="video" autoplay playsinline muted class="hidden"></video>
 
@@ -114,11 +114,11 @@
 
         // Check if HTTPS
         if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-            statusDiv.innerHTML = '<div class="status error">⚠️ Attention: Vous utilisez HTTP. La caméra nécessite HTTPS (sauf sur localhost).</div>';
+            statusDiv.innerHTML = '<div class="status error">⚠️ Warning: You are using HTTP. Camera access requires HTTPS (except on localhost).</div>';
         }
 
         async function checkPermissions() {
-            statusDiv.innerHTML = '<div class="status info">Vérification des permissions...</div>';
+            statusDiv.innerHTML = '<div class="status info">Checking permissions...</div>';
             
             try {
                 // Check if mediaDevices is supported
@@ -130,39 +130,39 @@
                 if (navigator.permissions && navigator.permissions.query) {
                     try {
                         const result = await navigator.permissions.query({ name: 'camera' });
-                        statusDiv.innerHTML = `<div class="status ${result.state === 'granted' ? 'success' : result.state === 'denied' ? 'error' : 'info'}">
-                            📋 État de la permission caméra: <strong>${result.state}</strong>
+                statusDiv.innerHTML = `<div class="status ${result.state === 'granted' ? 'success' : result.state === 'denied' ? 'error' : 'info'}">
+                    📋 Camera permission state: <strong>${result.state}</strong>
                         </div>`;
                     } catch (e) {
-                        statusDiv.innerHTML = '<div class="status info">⚠️ Impossible de vérifier les permissions (pas supporté dans ce navigateur)</div>';
+                        statusDiv.innerHTML = '<div class="status info">⚠️ Unable to check permissions (not supported in this browser)</div>';
                     }
                 } else {
-                    statusDiv.innerHTML = '<div class="status info">⚠️ API Permissions non disponible dans ce navigateur</div>';
+                    statusDiv.innerHTML = '<div class="status info">⚠️ Permissions API not available in this browser</div>';
                 }
 
                 // Enumerate devices
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(d => d.kind === 'videoinput');
                 
-                let deviceInfo = '<h3>Caméras Disponibles:</h3><pre>';
+                let deviceInfo = '<h3>Available Cameras:</h3><pre>';
                 if (videoDevices.length === 0) {
-                    deviceInfo += '❌ Aucune caméra détectée\n';
+                    deviceInfo += '❌ No camera detected\n';
                 } else {
                     videoDevices.forEach((device, i) => {
-                        deviceInfo += `✓ Caméra ${i + 1}: ${device.label || 'Non nommée'} (ID: ${device.deviceId.substr(0, 20)}...)\n`;
+                        deviceInfo += `✓ Camera ${i + 1}: ${device.label || 'Unnamed'} (ID: ${device.deviceId.substr(0, 20)}...)\n`;
                     });
                 }
                 deviceInfo += '</pre>';
                 detailsDiv.innerHTML = deviceInfo;
 
             } catch (error) {
-                statusDiv.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                statusDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
                 console.error(error);
             }
         }
 
         async function testCamera() {
-            statusDiv.innerHTML = '<div class="status info">🔄 Demande d\'accès à la caméra...</div>';
+            statusDiv.innerHTML = '<div class="status info">🔄 Requesting camera access...</div>';
             testBtn.disabled = true;
 
             try {
@@ -188,60 +188,60 @@
                 // Wait for video to be ready
                 video.onloadedmetadata = () => {
                     video.play().then(() => {
-                        statusDiv.innerHTML = '<div class="status success">✅ Caméra activée avec succès!</div>';
+                        statusDiv.innerHTML = '<div class="status success">✅ Camera activated successfully!</div>';
                         
                         const track = stream.getVideoTracks()[0];
                         const settings = track.getSettings();
                         
                         detailsDiv.innerHTML = `
-                            <h3>Informations de la Caméra:</h3>
+                            <h3>Camera Information:</h3>
                             <pre>
 Label: ${track.label}
-Résolution: ${settings.width}x${settings.height}
+Resolution: ${settings.width}x${settings.height}
 Frame Rate: ${settings.frameRate} fps
-Facing Mode: ${settings.facingMode || 'non spécifié'}
+Facing Mode: ${settings.facingMode || 'unspecified'}
                             </pre>
                         `;
                     }).catch(err => {
-                        statusDiv.innerHTML = `<div class="status error">❌ Erreur lors de la lecture: ${err.message}</div>`;
+                        statusDiv.innerHTML = `<div class="status error">❌ Play error: ${err.message}</div>`;
                         console.error('Play error:', err);
                     });
                 };
 
                 video.onerror = (err) => {
-                    statusDiv.innerHTML = `<div class="status error">❌ Erreur vidéo: ${err}</div>`;
+                    statusDiv.innerHTML = `<div class="status error">❌ Video error: ${err}</div>`;
                     console.error('Video error:', err);
                 };
 
             } catch (error) {
                 console.error('Camera error:', error);
                 
-                let errorMsg = 'Erreur inconnue';
+                let errorMsg = 'Unknown error';
                 let solution = '';
 
                 switch(error.name) {
                     case 'NotAllowedError':
                     case 'PermissionDeniedError':
-                        errorMsg = 'Permission refusée';
-                        solution = 'Cliquez sur l\'icône 🔒 ou 🎥 dans la barre d\'adresse pour autoriser l\'accès.';
+                        errorMsg = 'Permission denied';
+                        solution = 'Click the 🔒 or 🎥 icon in the address bar to allow camera access.';
                         break;
                     case 'NotFoundError':
                     case 'DevicesNotFoundError':
-                        errorMsg = 'Aucune caméra trouvée';
-                        solution = 'Vérifiez qu\'une caméra est connectée et reconnue par votre système.';
+                        errorMsg = 'No camera found';
+                        solution = 'Ensure a camera is connected and recognized by your system.';
                         break;
                     case 'NotReadableError':
                     case 'TrackStartError':
-                        errorMsg = 'Caméra déjà utilisée';
-                        solution = 'Fermez les autres applications utilisant la caméra (Zoom, Skype, etc.).';
+                        errorMsg = 'Camera already in use';
+                        solution = 'Close other applications using the camera (Zoom, Skype, etc.).';
                         break;
                     case 'OverconstrainedError':
-                        errorMsg = 'Paramètres non supportés';
-                        solution = 'La caméra ne supporte pas la résolution demandée.';
+                        errorMsg = 'Unsupported constraints';
+                        solution = 'The camera does not support the requested resolution.';
                         break;
                     case 'SecurityError':
-                        errorMsg = 'Erreur de sécurité';
-                        solution = 'Le site doit être en HTTPS pour accéder à la caméra.';
+                        errorMsg = 'Security error';
+                        solution = 'The site must use HTTPS to access the camera.';
                         break;
                     default:
                         errorMsg = error.message;
@@ -254,7 +254,7 @@ Facing Mode: ${settings.facingMode || 'non spécifié'}
                     </div>
                 `;
                 
-                detailsDiv.innerHTML = `<pre>Détails de l'erreur:\n${JSON.stringify(error, null, 2)}</pre>`;
+                detailsDiv.innerHTML = `<pre>Error details:\n${JSON.stringify(error, null, 2)}</pre>`;
             } finally {
                 testBtn.disabled = false;
             }
@@ -267,7 +267,7 @@ Facing Mode: ${settings.facingMode || 'non spécifié'}
                 video.srcObject = null;
                 video.classList.add('hidden');
                 stopBtn.classList.add('hidden');
-                statusDiv.innerHTML = '<div class="status info">Caméra arrêtée</div>';
+                statusDiv.innerHTML = '<div class="status info">Camera stopped</div>';
             }
         }
 

@@ -165,14 +165,21 @@ const Products = () => {
                     size="lg"
                     asChild
                   >
-                    <a 
-                      href={`https://k18hair.com/products/${product.id}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      <ShoppingBag className="mr-2 h-5 w-5" />
-                      Buy Now
-                    </a>
+                        <button
+                          onClick={() => {
+                            // Save pending purchase so reminder page can redirect after setting reminder
+                            const pending = {
+                              url: `https://k18hair.com/products/${product.id}`,
+                              productId: product.id,
+                            };
+                            sessionStorage.setItem('pendingPurchase', JSON.stringify(pending));
+                            navigate('/products/reminder');
+                          }}
+                          className="flex items-center justify-center w-full"
+                        >
+                          <ShoppingBag className="mr-2 h-5 w-5" />
+                          Buy Now
+                        </button>
                   </Button>
                   <Button 
                     variant="outline" 

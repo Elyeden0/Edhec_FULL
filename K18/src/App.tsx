@@ -8,7 +8,8 @@ import Step1Location from "./pages/Step1Location";
 import Step2Photo from "./pages/Step2Photo";
 import Results from "./pages/Results";
 import Products from "./pages/Products";
-import RgpdPolicy from "./pages/RgpdPolicy";
+import SetReminder from "./pages/SetReminder";
+import GdprPolicy from "./pages/GdprPolicy";
 import CameraDebug from "./pages/CameraDebug";
 import NotFound from "./pages/NotFound";
 
@@ -25,8 +26,9 @@ const App = () => (
           <Route path="/step1" element={<Step1Location />} />
           <Route path="/step2" element={<Step2Photo />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/products/reminder" element={<SetReminder />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/rgpd-policy" element={<RgpdPolicy />} />
+          <Route path="/gdpr-policy" element={<GdprPolicy />} />
           <Route path="/camera-debug" element={<CameraDebug />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
