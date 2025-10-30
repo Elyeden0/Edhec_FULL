@@ -12,7 +12,7 @@ AI-powered hair analysis and product recommendation platform combining computer 
 
 ## 🚀 Quick Start
 
-# Need at least Node.js 22.21.0
+#### Need at least Node.js 22.21.0
 
 ### One-Command Start
 
